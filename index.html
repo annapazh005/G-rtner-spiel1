@@ -431,6 +431,7 @@
         let coins = 50;
         let plants = Array(plantSpots.length).fill(null);
         let isDraggingScissors = false;
+        let dragOffset = { x: 0, y: 0 };
         
         const floatingPoints = document.querySelectorAll('.floating-point');
         
@@ -695,31 +696,41 @@
         });
         
         // Logik für die bewegbare Schere
-        scissors.addEventListener('mousedown', (e) => {
+        const getClientPosition = (e) => {
+            return e.touches ? { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY } : { clientX: e.clientX, clientY: e.clientY };
+        };
+
+        const onStartDrag = (e) => {
+            e.preventDefault();
+            const clientPos = getClientPosition(e);
+            const rect = scissors.getBoundingClientRect();
+            dragOffset.x = clientPos.clientX - rect.left;
+            dragOffset.y = clientPos.clientY - rect.top;
             isDraggingScissors = true;
             scissors.style.cursor = 'grabbing';
-        });
-
-        document.addEventListener('mousemove', (e) => {
+            scissors.style.transition = 'none'; // Entfernt die Transition während des Ziehens
+        };
+        
+        const onDrag = (e) => {
             if (isDraggingScissors) {
-                // Berechnet die Position der Maus relativ zum Spielbereich
-                const rect = gameLayout.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-
-                // Aktualisiert die Position der Schere
-                scissors.style.left = `${x}px`;
-                scissors.style.top = `${y}px`;
+                const clientPos = getClientPosition(e);
+                const gameRect = gameLayout.getBoundingClientRect();
+                const newX = clientPos.clientX - dragOffset.x;
+                const newY = clientPos.clientY - dragOffset.y;
+                scissors.style.left = `${newX - gameRect.left}px`;
+                scissors.style.top = `${newY - gameRect.top}px`;
             }
-        });
+        };
 
-        document.addEventListener('mouseup', (e) => {
+        const onEndDrag = (e) => {
             if (isDraggingScissors) {
                 isDraggingScissors = false;
                 scissors.style.cursor = 'grab';
+                scissors.style.transition = 'transform 0.2s ease-in-out'; // Fügt die Transition wieder hinzu
 
-                const mouseX = e.clientX;
-                const mouseY = e.clientY;
+                const clientPos = getClientPosition(e);
+                const mouseX = clientPos.clientX;
+                const mouseY = clientPos.clientY;
 
                 // Überprüft, ob die Schere über einem "Bereit"-Pflanzenplatz losgelassen wurde
                 plants.forEach((plant, index) => {
@@ -738,7 +749,15 @@
                     }
                 });
             }
-        });
+        };
+
+        scissors.addEventListener('mousedown', onStartDrag);
+        document.addEventListener('mousemove', onDrag);
+        document.addEventListener('mouseup', onEndDrag);
+
+        scissors.addEventListener('touchstart', onStartDrag);
+        document.addEventListener('touchmove', onDrag);
+        document.addEventListener('touchend', onEndDrag);
 
 
         // Funktion, um die schwebenden Punkte zu initialisieren
@@ -850,3 +869,4 @@
     </script>
 </body>
 </html>
+
