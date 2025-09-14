@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Süßes Gärtner-Spiel</title>
+    <!-- Tailwind CSS wird für schnelles und responsives Styling geladen -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font für mystische Schrift -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Eigene CSS-Regeln für einen Kawaii-Stil und Farb-Variablen -->
+    <style>
+        :root {
+            --bg-color: #F8F4E3;
+            --container-bg: #E3FBE3;
+            --border-color: #B0CCB0;
+            --text-color: #4C6F4C;
+            --button-bg: #B0CCB0;
+            --button-text: #4C6F4C;
+        }
+
+        .theme-blue {
+            --bg-color: #F0F8FF;
+            --container-bg: #FFC0CB;
+            --border-color: #FF69B4;
+            --text-color: #4B0082;
+            --button-bg: #B0CCF5;
+            --button-text: #4B0082;
+        }
+        
+        .theme-orange {
+            --bg-color: #FFFAE0;
+            --container-bg: #FFA07A;
+            --border-color: #CD5C5C;
+            --text-color: #8B4513;
+            --button-bg: #FF7F50;
+            --button-text: #8B4513;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Comic Sans', sans-serif; /* Eine spielerische Schriftart */
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: background-color 0.5s ease-in-out;
+            overflow: hidden; /* Verhindert Scrollen bei schwebenden Punkten */
+        }
+
+        .kawaii-container {
+            background-color: var(--container-bg);
+            border: 4px solid var(--border-color);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .splash-text {
+            color: var(--text-color);
+            text-shadow: 2px 2px 0px var(--bg-color);
+            transition: opacity 1s ease-in-out;
+            font-family: 'Cinzel Decorative', serif; /* Die neue, mystische Schriftart */
+        }
+
+        .start-button, .menu-button {
+            transition: opacity 0.5s ease-in-out, transform 0.2s ease-in-out;
+            background-color: var(--button-bg);
+            color: var(--button-text);
+        }
+
+        .start-button:hover, .menu-button:hover {
+            transform: scale(1.05);
+            filter: brightness(1.1);
+        }
+
+        .floating-points-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10; /* Stellen sicher, dass Punkte unter den Buttons sind */
+        }
+
+        .floating-point {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--text-color);
+            animation: float 5s infinite ease-in-out;
+            opacity: 0.8;
+            transition: opacity 0.2s ease-out, transform 0.2s ease-out; /* Übergang für den Platzeffekt */
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Das Audio-Element für die Hintergrundmusik -->
+    <!-- Wichtig: 'loop' sorgt dafür, dass sich der Song wiederholt -->
+    <audio id="backgroundMusic" src="https://www.bensound.com/bensound-music/bensound-sunny.mp3" loop hidden></audio>
+
+    <!-- Modal für das Zurücksetzen des Spiels -->
+    <div id="resetModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div class="kawaii-container rounded-3xl p-6 md:p-8 text-center max-w-sm">
+            <h2 class="text-xl font-bold text-[var(--text-color)] mb-4">Spiel zurücksetzen</h2>
+            <p class="text-[var(--text-color)] mb-6">Möchtest du das Spiel wirklich zurücksetzen? Dein Name und dein Fortschritt werden gelöscht.</p>
+            <div class="flex justify-center gap-4">
+                <button id="confirmResetButton" class="menu-button px-6 py-3 text-sm font-bold rounded-full shadow-lg">
+                    Ja, zurücksetzen
+                </button>
+                <button id="cancelResetButton" class="menu-button px-6 py-3 text-sm font-bold rounded-full shadow-lg">
+                    Abbrechen
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal für Nachrichten und KI-Tipps -->
+    <div id="messageModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div class="kawaii-container rounded-3xl p-6 md:p-8 text-center max-w-sm">
+            <h2 id="messageTitle" class="text-xl font-bold text-[var(--text-color)] mb-4"></h2>
+            <p id="messageContent" class="text-[var(--text-color)] mb-6"></p>
+            <button id="closeMessageButton" class="menu-button px-6 py-3 text-sm font-bold rounded-full shadow-lg">
+                OK
+            </button>
+        </div>
+    </div>
+
+    <!-- Splash-Screen-Container (Deckblatt) -->
+    <div id="splashScreen" class="absolute inset-0 flex flex-col items-center justify-center p-4 z-10 transition-opacity duration-1000">
+        <!-- Schwebende Punkte zur Dekoration -->
+        <div id="floatingPointsContainer" class="floating-points-container">
+            <span class="floating-point"></span>
+            <span class="floating-point"></span>
+            <span class="floating-point"></span>
+            <span class="floating-point"></span>
+            <span class="floating-point"></span>
+            <span class="floating-point"></span>
+            <span class="floating-point"></span>
+            <span class="floating-point"></span>
+            <span class="floating-point"></span>
+            <span class="floating-point"></span>
+            <span class="floating-point"></span>
+            <span class="floating-point"></span>
+        </div>
+
+        <!-- Der Haupttext -->
+        <h1 id="splashText" class="splash-text text-4xl md:text-5xl font-extrabold text-center transition-opacity duration-1000">
+            FORREST
+        </h1>
+        
+        <!-- Bereich für den Namen des Spielers -->
+        <p id="playerNameDisplay" class="text-[var(--text-color)] text-xl font-bold mt-4 mb-2"></p>
+
+        <!-- Start-Button, der nach 5 Sekunden erscheint -->
+        <button id="startButton" class="start-button px-8 py-4 mt-8 text-xl font-bold rounded-full shadow-lg opacity-0 pointer-events-none transform -translate-y-4 transition-all duration-500 z-20">
+            Start
+        </button>
+        
+        <!-- Das Menü (anfangs unsichtbar) -->
+        <div id="menu" class="flex flex-col gap-2 mt-4 opacity-0 pointer-events-none transition-opacity duration-500 z-20">
+            <button id="settingsButton" class="menu-button px-6 py-3 text-sm font-bold rounded-full shadow-lg">
+                Einstellung
+            </button>
+            <button id="musicButton" class="menu-button px-6 py-3 text-sm font-bold rounded-full shadow-lg">
+                Musik An
+            </button>
+            <button id="backgroundButton" class="menu-button px-6 py-3 text-sm font-bold rounded-full shadow-lg">
+                Hintergrund
+            </button>
+        </div>
+    </div>
+
+    <!-- Haupt-Spiel-Container (zunächst unsichtbar) -->
+    <div id="gameLayout" class="hidden absolute inset-0 flex items-center justify-center p-4 z-10">
+        
+        <!-- Der Zurück-Button ist jetzt oben links -->
+        <button id="backButton" class="absolute top-4 left-4 px-4 py-2 text-sm font-bold rounded-full shadow-lg z-20">
+            ← Zurück
+        </button>
+
+        <!-- Münzzähler oben links -->
+        <div id="coinCounter" class="absolute top-4 right-4 z-20 menu-button px-4 py-2 rounded-full shadow-lg">
+            <span id="coinText">💰 50</span>
+        </div>
+        
+        <!-- Die Schere für die Ernte -->
+        <div id="scissors" class="absolute top-20 right-8 text-4xl cursor-grab z-30 transform transition-transform duration-200 ease-in-out select-none">
+            ✂️
+        </div>
+
+        <!-- Rechtes Seitenmenü für Werkzeuge -->
+        <div id="rightMenu" class="absolute right-4 top-1/2 -translate-y-1/2 h-full flex flex-col justify-center items-center gap-4 w-1/6">
+            <button id="shopButton" class="menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg">
+                Shop
+            </button>
+            <button id="seedButton" class="menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg">
+                Samen
+            </button>
+            <button id="soilButton" class="menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg">
+                Erde
+            </button>
+            <button id="waterButton" class="menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg">
+                Wasser
+            </button>
+             <button id="geminiTipButton" class="menu-button px-4 py-2 mt-4 text-sm font-bold rounded-full shadow-lg">
+                ✨ Tipp
+            </button>
+        </div>
+
+        <!-- Mülleimer-Button unten links -->
+        <button id="trashButton" class="absolute bottom-4 left-4 px-4 py-2 text-2xl font-bold rounded-full shadow-lg z-20">
+            🗑️
+        </button>
+
+        <!-- Das Pflanzbeet ganz links -->
+        <div id="plantBed" class="absolute left-4 top-1/2 -translate-y-1/2 w-48 h-96 p-4 rounded-3xl shadow-inner grid grid-cols-3 grid-rows-3 gap-4" style="background-color: #A0522D; border: 4px solid #8B4513;">
+            <div id="spot-0" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
+                <span class="plant-emoji"></span>
+                <span class="timer-text text-xs mt-1"></span>
+            </div>
+            <div id="spot-1" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
+                <span class="plant-emoji"></span>
+                <span class="timer-text text-xs mt-1"></span>
+            </div>
+            <div id="spot-2" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
+                <span class="plant-emoji"></span>
+                <span class="timer-text text-xs mt-1"></span>
+            </div>
+            <div id="spot-3" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
+                <span class="plant-emoji"></span>
+                <span class="timer-text text-xs mt-1"></span>
+            </div>
+            <div id="spot-4" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
+                <span class="plant-emoji"></span>
+                <span class="timer-text text-xs mt-1"></span>
+            </div>
+            <div id="spot-5" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
+                <span class="plant-emoji"></span>
+                <span class="timer-text text-xs mt-1"></span>
+            </div>
+            <div id="spot-6" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
+                <span class="plant-emoji"></span>
+                <span class="timer-text text-xs mt-1"></span>
+            </div>
+            <div id="spot-7" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
+                <span class="plant-emoji"></span>
+                <span class="timer-text text-xs mt-1"></span>
+            </div>
+            <div id="spot-8" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
+                <span class="plant-emoji"></span>
+                <span class="timer-text text-xs mt-1"></span>
+            </div>
+        </div>
+
+        <!-- Haupt-Spielbereich mit Leinwand -->
+        <div id="gameContainer" class="w-full h-full kawaii-container rounded-3xl p-6 md:p-8 flex flex-col items-center max-w-lg">
+            <h1 class="splash-text text-2xl md:text-3xl font-extrabold text-center mb-6">
+                FORREST
+            </h1>
+            
+            <div class="relative w-full aspect-square border-4 rounded-xl shadow-inner overflow-hidden" style="border-color: var(--border-color);">
+                <canvas id="gameCanvas" class="w-full h-full" style="background-color: var(--container-bg);"></canvas>
+                
+                <!-- Der Shop wird über der Leinwand angezeigt -->
+                <div id="shopWindow" class="hidden absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center z-30 p-4">
+                    <div class="kawaii-container rounded-3xl p-6 md:p-8 text-center max-w-sm">
+                        <h2 class="text-2xl font-bold text-[var(--text-color)] mb-4">Shop</h2>
+                        <div class="grid grid-cols-2 gap-4">
+                            <!-- Shop-Artikel für Bogenhanf -->
+                            <button class="buy-button p-2 border-2 rounded-lg border-[var(--border-color)]" data-plant-type="Bogenhanf" data-cost="5" data-emoji="🌱">
+                                <img src="https://placehold.co/50x50/A8D1A8/4C6F4C?text=Seed" alt="Bogenhanf Samen" class="mx-auto my-2">
+                                <p class="text-[var(--text-color)]">Bogenhanf (5💰)</p>
+                            </button>
+                            <!-- Shop-Artikel für Alocasia -->
+                            <button class="buy-button p-2 border-2 rounded-lg border-[var(--border-color)]" data-plant-type="Alocasia" data-cost="5" data-emoji="🌿">
+                                <img src="https://placehold.co/50x50/66B066/335533?text=Seed" alt="Alocasia Samen" class="mx-auto my-2">
+                                <p class="text-[var(--text-color)]">Alocasia (5💰)</p>
+                            </button>
+                            <!-- Shop-Artikel für Strelitza -->
+                            <button class="buy-button p-2 border-2 rounded-lg border-[var(--border-color)]" data-plant-type="Strelitza" data-cost="5" data-emoji="🌸">
+                                <img src="https://placehold.co/50x50/FFB6C1/FF69B4?text=Seed" alt="Strelitza Samen" class="mx-auto my-2">
+                                <p class="text-[var(--text-color)]">Strelitza (5💰)</p>
+                            </button>
+                            <!-- Shop-Artikel für Efeu -->
+                            <button class="buy-button p-2 border-2 rounded-lg border-[var(--border-color)]" data-plant-type="Efeu" data-cost="5" data-emoji="🍃">
+                                <img src="https://placehold.co/50x50/98FB98/558B2F?text=Seed" alt="Efeu Samen" class="mx-auto my-2">
+                                <p class="text-[var(--text-color)]">Efeu (5💰)</p>
+                            </button>
+                        </div>
+                        <button id="closeShopButton" class="menu-button px-6 py-3 mt-6 text-sm font-bold rounded-full shadow-lg">
+                            Schließen
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Verkaufsstand-Bereich in der Mitte der Leinwand -->
+                <div id="sellingShop" class="absolute inset-0 m-auto flex flex-col items-center justify-center w-64 h-32 rounded-xl shadow-lg border-4 border-dashed" style="border-color: var(--border-color); background-color: rgba(255, 255, 255, 0.4);">
+                    <p class="text-xl font-bold text-[var(--text-color)]">Verkaufsstand</p>
+                    <p class="text-sm font-light text-[var(--text-color)]">Pflanzen hierher ziehen zum Verkaufen</p>
+                </div>
+            </div>
+            
+            <div id="game-controls" class="mt-6 w-full flex flex-wrap justify-center gap-4">
+                <p class="text-center text-[var(--text-color)]">
+                    Deine Gärtner-Reise beginnt hier. Lass uns die ersten Pflanzen säen!
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hintergrund-Container (zunächst unsichtbar) -->
+    <div id="backgroundContainer" class="hidden w-full h-full kawaii-container rounded-3xl p-6 md:p-8 flex flex-col items-center max-w-lg">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-[var(--text-color)] mb-6 text-center">
+            Hintergrund
+        </h1>
+
+        <!-- Der Zurück-Button ist jetzt oben links -->
+        <button id="backFromBackgroundButton" class="absolute top-4 left-4 px-4 py-2 text-sm font-bold rounded-full shadow-lg z-20">
+            ← Zurück
+        </button>
+
+        <p class="text-[var(--text-color)] mb-4 text-center">Wähle dein Farbschema:</p>
+        <div class="flex gap-4">
+            <button id="themeBeigeButton" class="menu-button px-6 py-3 text-sm font-bold rounded-full shadow-lg">
+                Beige / Grün
+            </button>
+            <button id="themeBlueButton" class="menu-button px-6 py-3 text-sm font-bold rounded-full shadow-lg">
+                Blau / Pink
+            </button>
+            <button id="themeOrangeButton" class="menu-button px-6 py-3 text-sm font-bold rounded-full shadow-lg">
+                Orange / Rot
+            </button>
+        </div>
+    </div>
+
+    <!-- Einstellungs-Container (zunächst unsichtbar) -->
+    <div id="settingsContainer" class="hidden w-full h-full kawaii-container rounded-3xl p-6 md:p-8 flex flex-col items-center max-w-lg">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-[var(--text-color)] mb-6 text-center">
+            Einstellung
+        </h1>
+
+        <!-- Der Zurück-Button ist jetzt oben links -->
+        <button id="backFromSettingsButton" class="absolute top-4 left-4 px-4 py-2 text-sm font-bold rounded-full shadow-lg z-20">
+            ← Zurück
+        </button>
+
+        <!-- Helligkeitsregler -->
+        <div class="w-full flex flex-col items-center mb-4">
+            <p class="text-[var(--text-color)] mt-4 mb-2 text-center">Helligkeit anpassen:</p>
+            <div class="w-2/3 flex justify-center gap-4 items-center">
+                <span class="text-sm">Dunkel</span>
+                <input type="range" id="brightnessSlider" min="0.2" max="1.5" value="1" step="0.05" class="w-full">
+                <span class="text-sm">Hell</span>
+            </div>
+        </div>
+        
+        <!-- Lautstärkeregler für Musik -->
+        <div class="w-full flex flex-col items-center mb-4">
+            <p class="text-[var(--text-color)] mb-2 text-center">Musik Lautstärke:</p>
+            <div class="w-2/3 flex justify-center gap-4 items-center">
+                <span class="text-sm">Leise</span>
+                <input type="range" id="musicVolumeSlider" min="0" max="1" value="1" step="0.1" class="w-full">
+                <span class="text-sm">Laut</span>
+            </div>
+        </div>
+
+        <!-- Namenseingabe für die Farm -->
+        <div class="mt-8 flex flex-col items-center w-full">
+            <p class="text-[var(--text-color)] mb-2">Dein Farmname:</p>
+            <input type="text" id="farmNameInput" placeholder="Gib deinen Namen ein..." class="w-2/3 px-4 py-2 rounded-full border-2 border-[var(--border-color)] text-center text-[var(--text-color)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--border-color)]">
+            <button id="saveNameButton" class="menu-button px-6 py-3 mt-4 text-sm font-bold rounded-full shadow-lg">
+                Namen speichern
+            </button>
+        </div>
+
+        <!-- Spiel zurücksetzen Button -->
+        <button id="resetGameButton" class="menu-button px-6 py-3 mt-8 text-sm font-bold rounded-full shadow-lg">
+            Spiel zurücksetzen
+        </button>
+    </div>
+
+    <script>
+        const splashScreen = document.getElementById('splashScreen');
+        const splashText = document.getElementById('splashText');
+        const playerNameDisplay = document.getElementById('playerNameDisplay');
+        const startButton = document.getElementById('startButton');
+        const settingsButton = document.getElementById('settingsButton');
+        const backgroundButton = document.getElementById('backgroundButton');
+        const musicButton = document.getElementById('musicButton');
+        const menu = document.getElementById('menu');
+        const gameLayout = document.getElementById('gameLayout');
+        const backButton = document.getElementById('backButton');
+        const backgroundContainer = document.getElementById('backgroundContainer');
+        const backFromBackgroundButton = document.getElementById('backFromBackgroundButton');
+        const settingsContainer = document.getElementById('settingsContainer');
+        const backFromSettingsButton = document.getElementById('backFromSettingsButton');
+        const brightnessSlider = document.getElementById('brightnessSlider');
+        const musicVolumeSlider = document.getElementById('musicVolumeSlider');
+        const themeBeigeButton = document.getElementById('themeBeigeButton');
+        const themeBlueButton = document.getElementById('themeBlueButton');
+        const themeOrangeButton = document.getElementById('themeOrangeButton');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        const farmNameInput = document.getElementById('farmNameInput');
+        const saveNameButton = document.getElementById('saveNameButton');
+        const resetGameButton = document.getElementById('resetGameButton');
+        const resetModal = document.getElementById('resetModal');
+        const confirmResetButton = document.getElementById('confirmResetButton');
+        const cancelResetButton = document.getElementById('cancelResetButton');
+        const shopButton = document.getElementById('shopButton');
+        const shopWindow = document.getElementById('shopWindow');
+        const closeShopButton = document.getElementById('closeShopButton');
+        const coinText = document.getElementById('coinText');
+        const buyButtons = document.querySelectorAll('.buy-button');
+        const plantSpots = document.querySelectorAll('.plant-spot');
+        const sellingShop = document.getElementById('sellingShop');
+        const scissors = document.getElementById('scissors');
+        const geminiTipButton = document.getElementById('geminiTipButton');
+        
+        let isMusicPlaying = false;
+        let coins = 50;
+        let plants = Array(plantSpots.length).fill(null);
+        let isDraggingScissors = false;
+        
+        const floatingPoints = document.querySelectorAll('.floating-point');
+        
+        const apiKey = "";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+        // Funktion zur Anpassung der Canvas-Größe
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+        }
+        
+        // Funktion zum Anzeigen einer Nachricht
+        function showMessage(title, content) {
+            document.getElementById('messageTitle').textContent = title;
+            document.getElementById('messageContent').textContent = content;
+            document.getElementById('messageModal').classList.remove('hidden');
+        }
+
+        // Funktion zum Schließen der Nachricht
+        document.getElementById('closeMessageButton').addEventListener('click', () => {
+            document.getElementById('messageModal').classList.add('hidden');
+        });
+
+        // Funktion, um die Bildschirme zu wechseln
+        function showScreen(screenId) {
+            const allScreens = [splashScreen, gameLayout, backgroundContainer, settingsContainer];
+            allScreens.forEach(screen => {
+                if (screen.id === screenId) {
+                    screen.classList.remove('hidden');
+                } else {
+                    screen.classList.add('hidden');
+                }
+            });
+        }
+        
+        // Funktion, um zum Menü zurückzukehren und die Buttons sichtbar zu machen
+        function showMenu() {
+            splashText.classList.add('opacity-0');
+            startButton.classList.remove('opacity-0', 'pointer-events-none');
+            startButton.classList.add('opacity-100');
+            startButton.style.transform = 'translateY(0)';
+            menu.classList.remove('opacity-0', 'pointer-events-none');
+            menu.classList.add('opacity-100');
+            updatePlayerNameDisplay();
+        }
+
+        // Funktion, die die Animation für das Deckblatt startet (nur einmal beim Laden der Seite)
+        function startIntroAnimation() {
+            splashText.classList.remove('opacity-0');
+            startButton.classList.add('opacity-0', 'pointer-events-none');
+            startButton.style.transform = 'translateY(-4px)';
+            menu.classList.add('opacity-0', 'pointer-events-none');
+            
+            updatePlayerNameDisplay();
+
+            setTimeout(() => {
+                splashText.classList.add('opacity-0');
+                setTimeout(() => {
+                    showMenu();
+                }, 500);
+            }, 5000); // 5 Sekunden Wartezeit für den Text
+        }
+        
+        // Funktion, um den Namen des Spielers anzuzeigen
+        function updatePlayerNameDisplay() {
+            const storedName = localStorage.getItem('farmName');
+            if (storedName) {
+                playerNameDisplay.textContent = `Hallo, ${storedName}!`;
+                playerNameDisplay.classList.remove('hidden');
+            } else {
+                playerNameDisplay.textContent = '';
+                playerNameDisplay.classList.add('hidden');
+            }
+        }
+
+        // Funktion zum Aktualisieren der Münzanzeige
+        function updateCoinDisplay() {
+            coinText.textContent = `💰 ${coins}`;
+        }
+
+        // Funktion zum Aktualisieren des Beetes
+        function updatePlantBed() {
+            plants.forEach((plant, index) => {
+                const spot = plantSpots[index];
+                const plantEmoji = spot.querySelector('.plant-emoji');
+                const timerText = spot.querySelector('.timer-text');
+
+                if (plant) {
+                    plantEmoji.textContent = plant.emoji;
+                    // Stelle sicher, dass der Timer immer angezeigt wird, wenn eine Pflanze da ist
+                    timerText.classList.remove('hidden');
+                    // Pflanzen können nur gezogen werden, wenn sie ausgewachsen sind
+                    if (plant.isReady) {
+                        spot.setAttribute('draggable', true);
+                        spot.classList.add('cursor-grab');
+                        timerText.textContent = "Bereit!";
+                    } else {
+                        spot.removeAttribute('draggable');
+                        spot.classList.remove('cursor-grab');
+                    }
+                } else {
+                    plantEmoji.textContent = '';
+                    spot.removeAttribute('draggable');
+                    spot.classList.remove('cursor-grab');
+                    timerText.textContent = '';
+                    timerText.classList.add('hidden');
+                }
+            });
+        }
+        
+        // Führt resizeCanvas und die Startanimation beim Laden der Seite aus
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            showScreen('splashScreen');
+            startIntroAnimation();
+            updateCoinDisplay(); // Münzanzeige beim Laden initialisieren
+        });
+
+        // Führt resizeCanvas bei jeder Fenstergrößenänderung aus
+        window.addEventListener('resize', resizeCanvas);
+
+        // Event-Listener für den Start-Button
+        startButton.addEventListener('click', () => {
+            showScreen('gameLayout');
+            resizeCanvas();
+        });
+
+        // Event-Listener für den Zurück-Button auf der Spielseite
+        backButton.addEventListener('click', () => {
+            showScreen('splashScreen');
+            showMenu();
+        });
+
+        // Event-Listener für den Hintergrund-Button
+        backgroundButton.addEventListener('click', () => {
+            showScreen('backgroundContainer');
+        });
+
+        // Event-Listener für den Zurück-Button auf der Hintergrundseite
+        backFromBackgroundButton.addEventListener('click', () => {
+            showScreen('splashScreen');
+            showMenu();
+        });
+        
+        // Event-Listener für den Einstellungs-Button
+        settingsButton.addEventListener('click', () => {
+            showScreen('settingsContainer');
+            farmNameInput.value = localStorage.getItem('farmName') || '';
+            // Die Lautstärke der Musik vom Speicher laden
+            musicVolumeSlider.value = localStorage.getItem('musicVolume') || 1;
+        });
+
+        // Event-Listener für den Zurück-Button auf der Einstellungsseite
+        backFromSettingsButton.addEventListener('click', () => {
+            showScreen('splashScreen');
+            showMenu();
+        });
+
+        // Event-Listener für den Helligkeitsregler
+        brightnessSlider.addEventListener('input', (event) => {
+            const brightnessValue = event.target.value;
+            document.body.style.filter = `brightness(${brightnessValue})`;
+        });
+
+        // Event-Listener für den Musik-Lautstärkeregler
+        musicVolumeSlider.addEventListener('input', (event) => {
+            localStorage.setItem('musicVolume', event.target.value);
+            backgroundMusic.volume = event.target.value;
+        });
+
+        // Event-Listener für den Musik-Button
+        musicButton.addEventListener('click', () => {
+            if (isMusicPlaying) {
+                backgroundMusic.pause();
+                musicButton.textContent = 'Musik An';
+            } else {
+                backgroundMusic.play();
+                musicButton.textContent = 'Musik Aus';
+            }
+            isMusicPlaying = !isMusicPlaying;
+        });
+        
+        // Event-Listener für die Farbauswahl-Buttons
+        themeBeigeButton.addEventListener('click', () => {
+            document.body.classList.remove('theme-blue', 'theme-orange');
+        });
+
+        themeBlueButton.addEventListener('click', () => {
+            document.body.classList.remove('theme-orange');
+            document.body.classList.add('theme-blue');
+        });
+        
+        themeOrangeButton.addEventListener('click', () => {
+            document.body.classList.remove('theme-blue');
+            document.body.classList.add('theme-orange');
+        });
+
+        // Event-Listener für das Speichern des Namens
+        saveNameButton.addEventListener('click', () => {
+            const farmName = farmNameInput.value.trim();
+            if (farmName) {
+                localStorage.setItem('farmName', farmName);
+                updatePlayerNameDisplay();
+                farmNameInput.value = ''; // Eingabefeld leeren
+            }
+        });
+
+        // Event-Listener für den Zurücksetzen-Button
+        resetGameButton.addEventListener('click', () => {
+            resetModal.classList.remove('hidden');
+        });
+
+        // Event-Listener für den Bestätigungs-Button im Modal
+        confirmResetButton.addEventListener('click', () => {
+            localStorage.clear(); // Löscht alle gespeicherten Daten
+            window.location.reload(); // Lädt die Seite neu
+        });
+
+        // Event-Listener für den Abbrechen-Button im Modal
+        cancelResetButton.addEventListener('click', () => {
+            resetModal.classList.add('hidden');
+        });
+
+        // Event-Listener für den Shop-Button
+        shopButton.addEventListener('click', () => {
+            shopWindow.classList.remove('hidden');
+        });
+
+        // Event-Listener für den Shop-Schließen-Button
+        closeShopButton.addEventListener('click', () => {
+            shopWindow.classList.add('hidden');
+        });
+
+        // Event-Listener für die Kauf-Buttons im Shop
+        buyButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const cost = parseInt(button.dataset.cost);
+                const plantType = button.dataset.plantType;
+                const emoji = button.dataset.emoji;
+
+                const freeSpotIndex = plants.findIndex(plant => plant === null);
+                // Zufällige Wachstumszeit in Sekunden (1, 2.5 oder 3 Minuten)
+                const growTimes = [60, 150, 180];
+                const growTime = growTimes[Math.floor(Math.random() * growTimes.length)];
+
+
+                if (coins >= cost) {
+                    if (freeSpotIndex !== -1) {
+                        coins -= cost;
+                        updateCoinDisplay();
+                        plants[freeSpotIndex] = { type: plantType, emoji: emoji, growth: growTime, isReady: false };
+                        updatePlantBed();
+                        shopWindow.classList.add('hidden'); // Shop nach dem Kauf schließen
+                    } else {
+                        showMessage('Beet voll!', 'Du hast keinen Platz mehr im Beet, um diese Pflanze zu setzen.');
+                    }
+                } else {
+                    showMessage('Nicht genug Münzen!', 'Du hast nicht genug Geld, um diese Pflanze zu kaufen.');
+                }
+            });
+        });
+        
+        // Logik für die bewegbare Schere
+        scissors.addEventListener('mousedown', (e) => {
+            isDraggingScissors = true;
+            scissors.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDraggingScissors) {
+                // Berechnet die Position der Maus relativ zum Spielbereich
+                const rect = gameLayout.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                // Aktualisiert die Position der Schere
+                scissors.style.left = `${x}px`;
+                scissors.style.top = `${y}px`;
+            }
+        });
+
+        document.addEventListener('mouseup', (e) => {
+            if (isDraggingScissors) {
+                isDraggingScissors = false;
+                scissors.style.cursor = 'grab';
+
+                const mouseX = e.clientX;
+                const mouseY = e.clientY;
+
+                // Überprüft, ob die Schere über einem "Bereit"-Pflanzenplatz losgelassen wurde
+                plants.forEach((plant, index) => {
+                    if (plant && plant.isReady) {
+                        const spot = plantSpots[index];
+                        const rect = spot.getBoundingClientRect();
+                        
+                        if (mouseX > rect.left && mouseX < rect.right && mouseY > rect.top && mouseY < rect.bottom) {
+                            // Pflanze verkaufen
+                            coins += 10;
+                            updateCoinDisplay();
+                            plants[index] = null;
+                            updatePlantBed();
+                            showMessage('Verkauft!', 'Du hast eine Pflanze für 10 Münzen verkauft.');
+                        }
+                    }
+                });
+            }
+        });
+
+
+        // Funktion, um die schwebenden Punkte zu initialisieren
+        function setupFloatingPoints() {
+            floatingPoints.forEach(point => {
+                // Setzt die Startposition und Animationsverzögerung zufällig
+                point.style.top = `${Math.random() * 100}%`;
+                point.style.left = `${Math.random() * 100}%`;
+                point.style.animationDelay = `${Math.random() * 5}s`;
+                // Setzt die Transparenz auf 0, um den "Pop"-Effekt vorzubereiten
+                point.style.opacity = '0';
+                setTimeout(() => {
+                    point.style.opacity = '0.8';
+                }, 100); // Kurze Verzögerung, um den Effekt sichtbar zu machen
+            });
+        }
+        
+        // Event-Listener für das Platzen der Punkte
+        floatingPoints.forEach(point => {
+            point.addEventListener('click', () => {
+                
+                // Skaliert den Punkt hoch und macht ihn transparent für den "Platz"-Effekt
+                point.style.transform = 'scale(1.5)';
+                point.style.opacity = '0';
+                
+                // Setzt den Punkt nach einer kurzen Verzögerung zurück, damit er wieder auftaucht
+                setTimeout(() => {
+                    point.style.top = `${Math.random() * 100}%`;
+                    point.style.left = `${Math.random() * 100}%`;
+                    point.style.animationDelay = `${Math.random() * 5}s`;
+                    point.style.transform = 'scale(1)'; // Zurücksetzen der Skalierung
+                    point.style.opacity = '0.8'; // Wieder sichtbar machen
+                }, 200); // Kurze Verzögerung, passend zur CSS-Transition
+            });
+        });
+        
+        // Event-Listener für den Gemini-Tipp-Button
+        geminiTipButton.addEventListener('click', async () => {
+            showMessage("✨ Gärtner-Tipp", "Lade einen Tipp...");
+            geminiTipButton.disabled = true;
+
+            const systemPrompt = "Provide a short, encouraging gardening tip for a casual, relaxing gardening game. The tone should be friendly, positive, and simple. The tip should be in German.";
+            const userQuery = "Schreibe einen Gärtnertipp.";
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                }
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API call failed with status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const tip = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (tip) {
+                    document.getElementById('messageContent').textContent = tip;
+                } else {
+                    document.getElementById('messageContent').textContent = "Keine Tipps verfügbar. Versuche es später noch einmal.";
+                }
+            } catch (error) {
+                console.error("Error fetching Gemini tip:", error);
+                document.getElementById('messageContent').textContent = "Fehler beim Laden des Tipps. Bitte versuche es noch einmal.";
+            } finally {
+                geminiTipButton.disabled = false;
+            }
+        });
+
+        // Führt die Initialisierung der schwebenden Punkte beim Laden der Seite aus
+        window.addEventListener('load', () => {
+            setupFloatingPoints();
+            // Stellt die Lautstärke der Musik beim Laden wieder her
+            const storedMusicVolume = localStorage.getItem('musicVolume');
+            if (storedMusicVolume !== null) {
+                backgroundMusic.volume = storedMusicVolume;
+            }
+        });
+
+        // Funktion zur Aktualisierung der Timer und des Spielzustandes
+        setInterval(() => {
+            plants.forEach((plant, index) => {
+                if (plant && !plant.isReady) {
+                    plant.growth--;
+                    const timerTextElement = plantSpots[index].querySelector('.timer-text');
+                    
+                    if (plant.growth <= 0) {
+                        plant.isReady = true;
+                        timerTextElement.textContent = "Bereit!";
+                        plantSpots[index].setAttribute('draggable', true);
+                        plantSpots[index].classList.add('cursor-grab');
+                    } else {
+                        const minutes = Math.floor(plant.growth / 60);
+                        const seconds = plant.growth % 60;
+                        timerTextElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    }
+                }
+            });
+        }, 1000);
+    </script>
+</body>
+</html>
