@@ -180,7 +180,7 @@
     </div>
 
     <!-- Haupt-Spiel-Container (zunächst unsichtbar) -->
-    <div id="gameLayout" class="hidden absolute inset-0 flex items-center justify-center p-4 z-10">
+    <div id="gameLayout" class="hidden absolute inset-0 flex flex-col md:flex-row items-center justify-center p-4 gap-4 z-10">
         
         <!-- Der Zurück-Button ist jetzt oben links -->
         <button id="backButton" class="absolute top-4 left-4 px-4 py-2 text-sm font-bold rounded-full shadow-lg z-20">
@@ -198,20 +198,20 @@
         </div>
 
         <!-- Rechtes Seitenmenü für Werkzeuge -->
-        <div id="rightMenu" class="absolute right-4 top-1/2 -translate-y-1/2 h-full flex flex-col justify-center items-center gap-4 w-1/6">
-            <button id="shopButton" class="menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg">
+        <div id="rightMenu" class="md:absolute md:right-4 md:top-1/2 md:-translate-y-1/2 flex flex-row md:flex-col justify-center items-center gap-2 p-2 w-full md:w-1/6">
+            <button id="shopButton" class="menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg w-full">
                 Shop
             </button>
-            <button id="seedButton" class="menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg">
+            <button id="seedButton" class="menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg w-full">
                 Samen
             </button>
-            <button id="soilButton" class="menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg">
+            <button id="soilButton" class="menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg w-full">
                 Erde
             </button>
-            <button id="waterButton" class="menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg">
+            <button id="waterButton" class="menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg w-full">
                 Wasser
             </button>
-             <button id="geminiTipButton" class="menu-button px-4 py-2 mt-4 text-sm font-bold rounded-full shadow-lg">
+             <button id="geminiTipButton" class="menu-button px-4 py-2 mt-4 text-sm font-bold rounded-full shadow-lg w-full">
                 ✨ Tipp
             </button>
         </div>
@@ -222,40 +222,40 @@
         </button>
 
         <!-- Das Pflanzbeet ganz links -->
-        <div id="plantBed" class="absolute left-4 top-1/2 -translate-y-1/2 w-48 h-96 p-4 rounded-3xl shadow-inner grid grid-cols-3 grid-rows-3 gap-4" style="background-color: #A0522D; border: 4px solid #8B4513;">
-            <div id="spot-0" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
+        <div id="plantBed" class="md:absolute md:left-4 md:top-1/2 md:-translate-y-1/2 w-full h-auto md:w-48 md:h-96 p-4 rounded-3xl shadow-inner grid grid-cols-3 grid-rows-3 gap-4" style="background-color: #A0522D; border: 4px solid #8B4513;">
+            <div id="spot-0" class="plant-spot w-full h-full aspect-square rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-3xl md:text-5xl flex-col" draggable="false">
                 <span class="plant-emoji"></span>
                 <span class="timer-text text-xs mt-1"></span>
             </div>
-            <div id="spot-1" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
+            <div id="spot-1" class="plant-spot w-full h-full aspect-square rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-3xl md:text-5xl flex-col" draggable="false">
                 <span class="plant-emoji"></span>
                 <span class="timer-text text-xs mt-1"></span>
             </div>
-            <div id="spot-2" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
+            <div id="spot-2" class="plant-spot w-full h-full aspect-square rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-3xl md:text-5xl flex-col" draggable="false">
                 <span class="plant-emoji"></span>
                 <span class="timer-text text-xs mt-1"></span>
             </div>
-            <div id="spot-3" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
+            <div id="spot-3" class="plant-spot w-full h-full aspect-square rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-3xl md:text-5xl flex-col" draggable="false">
                 <span class="plant-emoji"></span>
                 <span class="timer-text text-xs mt-1"></span>
             </div>
-            <div id="spot-4" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
+            <div id="spot-4" class="plant-spot w-full h-full aspect-square rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-3xl md:text-5xl flex-col" draggable="false">
                 <span class="plant-emoji"></span>
                 <span class="timer-text text-xs mt-1"></span>
             </div>
-            <div id="spot-5" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
+            <div id="spot-5" class="plant-spot w-full h-full aspect-square rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-3xl md:text-5xl flex-col" draggable="false">
                 <span class="plant-emoji"></span>
                 <span class="timer-text text-xs mt-1"></span>
             </div>
-            <div id="spot-6" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
+            <div id="spot-6" class="plant-spot w-full h-full aspect-square rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-3xl md:text-5xl flex-col" draggable="false">
                 <span class="plant-emoji"></span>
                 <span class="timer-text text-xs mt-1"></span>
             </div>
-            <div id="spot-7" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
+            <div id="spot-7" class="plant-spot w-full h-full aspect-square rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-3xl md:text-5xl flex-col" draggable="false">
                 <span class="plant-emoji"></span>
                 <span class="timer-text text-xs mt-1"></span>
             </div>
-            <div id="spot-8" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
+            <div id="spot-8" class="plant-spot w-full h-full aspect-square rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-3xl md:text-5xl flex-col" draggable="false">
                 <span class="plant-emoji"></span>
                 <span class="timer-text text-xs mt-1"></span>
             </div>
@@ -869,4 +869,5 @@
     </script>
 </body>
 </html>
+
 
