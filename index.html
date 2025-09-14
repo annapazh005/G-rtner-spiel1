@@ -180,7 +180,7 @@
     </div>
 
     <!-- Haupt-Spiel-Container (zunächst unsichtbar) -->
-    <div id="gameLayout" class="hidden absolute inset-0 flex flex-col md:flex-row items-center justify-center p-4 gap-4 z-10">
+    <div id="gameLayout" class="hidden absolute inset-0 flex flex-col items-center p-4 gap-4 md:flex-row md:justify-center md:p-4 md:gap-4 z-10">
         
         <!-- Der Zurück-Button ist jetzt oben links -->
         <button id="backButton" class="absolute top-4 left-4 px-4 py-2 text-sm font-bold rounded-full shadow-lg z-20">
@@ -670,7 +670,7 @@
         buyButtons.forEach(button => {
             button.addEventListener('click', () => {
                 const cost = parseInt(button.dataset.cost);
-                const plantType = button.dataset.plantType;
+                const plantType = button.dataset.plant-type;
                 const emoji = button.dataset.emoji;
 
                 const freeSpotIndex = plants.findIndex(plant => plant === null);
