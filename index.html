@@ -216,6 +216,13 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
             pointer-events: none; /* Wichtig, damit darunter liegende Elemente angeklickt werden können */
         }
+        
+        /* Neuer Style für das gezogene Pflanzenelement */
+        .dragging {
+            z-index: 2000; /* Stellt sicher, dass das Element über allem liegt */
+            pointer-events: none; /* Ermöglicht das Ablegen auf darunterliegenden Elementen */
+            transition: none; /* Deaktiviert die Transition beim Ziehen */
+        }
 
     </style>
 </head>
@@ -679,6 +686,7 @@
         let isDraggingScissors = false;
         let dragOffset = { x: 0, y: 0 };
         let draggedPlant = null;
+        let draggedPlantIndex = null;
         let sellingPlants = [];
         const maxSellingSlots = 3;
         
@@ -851,6 +859,51 @@
                 updateLevelDisplay();
             }
         }
+        
+        function saveGameState() {
+            const gameState = {
+                coins,
+                plants,
+                storagePlants,
+                sellingPlants,
+                level,
+                currentXp
+            };
+            localStorage.setItem('forrestGameState', JSON.stringify(gameState));
+        }
+
+        function loadGameState() {
+            const savedState = localStorage.getItem('forrestGameState');
+            if (savedState) {
+                const gameState = JSON.parse(savedState);
+                coins = gameState.coins;
+                plants = gameState.plants;
+                storagePlants = gameState.storagePlants;
+                sellingPlants = gameState.sellingPlants;
+                level = gameState.level;
+                currentXp = gameState.currentXp;
+
+                // Restore intervals for selling plants
+                sellingPlants.forEach((plant, index) => {
+                    if (plant && plant.timeRemaining > 0) {
+                        plant.interval = setInterval(() => {
+                            plant.timeRemaining--;
+                            updateSellingShopDisplay();
+                            if (plant.timeRemaining <= 0) {
+                                clearInterval(plant.interval);
+                                coins += plant.price;
+                                updateCoinDisplay();
+                                sellingPlants[index] = null;
+                                sellingPlants = sellingPlants.filter(p => p !== null);
+                                saveGameState(); // Save state after sale
+                                showMessage('Verkauft!', `Deine Pflanze wurde für ${plant.price} Münzen verkauft!`);
+                                updateSellingShopDisplay();
+                            }
+                        }, 1000);
+                    }
+                });
+            }
+        }
 
         // Funktion zum Aktualisieren des Beetes
         function updatePlantBed() {
@@ -882,6 +935,7 @@
                     infoButton.classList.add('hidden');
                 }
             });
+            saveGameState();
         }
 
         // Funktion zum Aktualisieren des Lagers
@@ -896,6 +950,7 @@
                 plantDiv.classList.add('cursor-grab');
                 storageContainer.appendChild(plantDiv);
             });
+            saveGameState();
         }
         
         // Funktion zum Aktualisieren des Verkaufsstandes
@@ -925,12 +980,14 @@
             } else {
                 sellingHint.classList.remove('hidden');
             }
+            saveGameState();
         }
 
 
         // Führt resizeCanvas und die Startanimation beim Laden der Seite aus
         window.addEventListener('load', () => {
             resizeCanvas();
+            loadGameState();
             showScreen('splashScreen');
             startIntroAnimation();
             updateCoinDisplay();
@@ -1142,64 +1199,84 @@
             });
         });
 
-        // Logik für die bewegbare Schere und Pflanzen
+        // Logik für die bewegbare Schere und Pflanzen (überarbeitet)
         const getClientPosition = (e) => {
             return e.touches ? { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY } : { clientX: e.clientX, clientY: e.clientY };
         };
         
-        const onStartDrag = (e) => {
+        // Drag-and-Drop-Logik für Pflanzen aus dem Lager
+        storageContainer.addEventListener('dragstart', (e) => {
+            const target = e.target;
+            if (target.classList.contains('storage-plant')) {
+                e.dataTransfer.setData('text/plain', target.dataset.storageIndex);
+                e.dataTransfer.effectAllowed = 'move';
+                // Hier fügen wir die "dragging" Klasse hinzu
+                target.classList.add('dragging');
+            }
+        });
+
+        storageContainer.addEventListener('dragend', (e) => {
+            // Hier entfernen wir die "dragging" Klasse wieder
+            e.target.classList.remove('dragging');
+        });
+
+        // Drag-and-Drop-Logik für den Verkauf im Shop
+        sellingShop.addEventListener('dragover', (e) => {
+            e.preventDefault(); // Erlaubt das Ablegen
+            e.dataTransfer.dropEffect = 'move';
+        });
+
+        sellingShop.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const storageIndex = e.dataTransfer.getData('text/plain');
+            const plantData = storagePlants[storageIndex];
+            
+            if (sellingPlants.length < maxSellingSlots) {
+                const sellingIndex = sellingPlants.length;
+                sellingPlants[sellingIndex] = plantData;
+                storagePlants.splice(storageIndex, 1);
+                updateStorageDisplay();
+                sellModal.classList.remove('hidden');
+                priceInput.dataset.sellingIndex = sellingIndex;
+            } else {
+                showMessage('Shop voll!', 'Der Verkaufsstand ist bereits voll. Warte, bis eine Pflanze verkauft wurde.');
+            }
+        });
+
+        // Drag-and-Drop-Logik für die Schere
+        scissors.addEventListener('mousedown', (e) => {
             e.preventDefault();
             const clientPos = getClientPosition(e);
-            
-            if (e.target.id === 'scissors') {
-                const rect = scissors.getBoundingClientRect();
-                dragOffset.x = clientPos.clientX - rect.left;
-                dragOffset.y = clientPos.clientY - rect.top;
-                isDraggingScissors = true;
-                scissors.style.cursor = 'grabbing';
-                scissors.style.transition = 'none';
-            }
-            else if (e.target.classList.contains('storage-plant')) {
-                draggedPlant = {
-                    element: e.target,
-                    data: storagePlants[e.target.dataset.storageIndex],
-                    index: e.target.dataset.storageIndex
-                };
-                const rect = draggedPlant.element.getBoundingClientRect();
-                dragOffset.x = clientPos.clientX - rect.left;
-                dragOffset.y = clientPos.clientY - rect.top;
-                draggedPlant.element.style.position = 'fixed';
-                draggedPlant.element.style.zIndex = '1000';
-            }
-        };
-        
-        const onDrag = (e) => {
-            const clientPos = getClientPosition(e);
+            const rect = scissors.getBoundingClientRect();
+            dragOffset.x = clientPos.clientX - rect.left;
+            dragOffset.y = clientPos.clientY - rect.top;
+            isDraggingScissors = true;
+            scissors.style.cursor = 'grabbing';
+            scissors.style.transition = 'none';
+        });
 
+        document.addEventListener('mousemove', (e) => {
+            const clientPos = getClientPosition(e);
             if (isDraggingScissors) {
                 const gameRect = gameLayout.getBoundingClientRect();
                 const newX = clientPos.clientX - dragOffset.x;
                 const newY = clientPos.clientY - dragOffset.y;
                 scissors.style.left = `${newX - gameRect.left}px`;
                 scissors.style.top = `${newY - gameRect.top}px`;
-            } else if (draggedPlant) {
-                draggedPlant.element.style.left = `${clientPos.clientX - dragOffset.x}px`;
-                draggedPlant.element.style.top = `${clientPos.clientY - dragOffset.y}px`;
             } else if (draggedSoilElement) {
                 draggedSoilElement.style.left = `${clientPos.clientX - draggedSoilElement.offsetWidth / 2}px`;
                 draggedSoilElement.style.top = `${clientPos.clientY - draggedSoilElement.offsetHeight / 2}px`;
             }
-        };
+        });
 
-        const onEndDrag = (e) => {
-            const clientPos = getClientPosition(e);
-            const mouseX = clientPos.clientX;
-            const mouseY = clientPos.clientY;
-            
+        document.addEventListener('mouseup', (e) => {
             if (isDraggingScissors) {
                 isDraggingScissors = false;
                 scissors.style.cursor = 'grab';
                 scissors.style.transition = 'transform 0.2s ease-in-out';
+                const clientPos = getClientPosition(e);
+                const mouseX = clientPos.clientX;
+                const mouseY = clientPos.clientY;
                 
                 // Ernte-Logik
                 plants.forEach((plant, index) => {
@@ -1216,37 +1293,12 @@
                         }
                     }
                 });
-            } else if (draggedPlant) {
-                const shopRect = sellingShop.getBoundingClientRect();
-                if (mouseX > shopRect.left && mouseX < shopRect.right && mouseY > shopRect.top && mouseY < shopRect.bottom) {
-                    if (sellingPlants.length < maxSellingSlots) {
-                        const sellingIndex = sellingPlants.length;
-                        sellingPlants[sellingIndex] = draggedPlant.data;
-                        storagePlants.splice(draggedPlant.index, 1);
-                        updateStorageDisplay();
-                        draggedPlant.element.remove();
-                        sellModal.classList.remove('hidden');
-                        priceInput.dataset.sellingIndex = sellingIndex;
-                    } else {
-                         showMessage('Shop voll!', 'Der Verkaufsstand ist bereits voll. Warte, bis eine Pflanze verkauft wurde.');
-                         draggedPlant.element.style.position = 'relative';
-                         draggedPlant.element.style.top = 'auto';
-                         draggedPlant.element.style.left = 'auto';
-                         updateStorageDisplay();
-                    }
-                } else {
-                    draggedPlant.element.style.position = 'relative';
-                    draggedPlant.element.style.top = 'auto';
-                    draggedPlant.element.style.left = 'auto';
-                    updateStorageDisplay();
-                }
-                draggedPlant = null;
             } else if (draggedSoilElement) {
                 let soilApplied = false;
                 plants.forEach((plant, index) => {
                     const spot = plantSpots[index];
                     const rect = spot.getBoundingClientRect();
-                    if (mouseX > rect.left && mouseX < rect.right && mouseY > rect.top && mouseY < rect.bottom) {
+                    if (e.clientX > rect.left && e.clientX < rect.right && e.clientY > rect.top && e.clientY < rect.bottom) {
                         if (plant) {
                             plant.growth -= draggedSoil.time;
                             if (plant.growth < 0) plant.growth = 0;
@@ -1256,25 +1308,14 @@
                         }
                     }
                 });
-
                 draggedSoilElement.remove();
                 draggedSoilElement = null;
                 draggedSoil = null;
-
                 if (!soilApplied) {
                     showMessage('Keine Pflanze gefunden!', 'Du musst die Erde auf eine wachsende Pflanze fallen lassen.');
                 }
             }
-        };
-        
-        document.addEventListener('mousedown', onStartDrag);
-        document.addEventListener('mousemove', onDrag);
-        document.addEventListener('mouseup', onEndDrag);
-
-        document.addEventListener('touchstart', onStartDrag);
-        document.addEventListener('touchmove', onDrag);
-        document.addEventListener('touchend', onEndDrag);
-        
+        });
 
         // Verkauf bestätigen Logik
         confirmSellButton.addEventListener('click', () => {
@@ -1300,7 +1341,9 @@
                     updateCoinDisplay();
                     sellingPlants[sellingIndex] = null;
                     sellingPlants = sellingPlants.filter(p => p !== null);
+                    saveGameState(); // Save state after sale
                     showMessage('Verkauft!', `Deine Pflanze wurde für ${price} Münzen verkauft!`);
+                    updateSellingShopDisplay();
                 }
                 updateSellingShopDisplay();
             }, 1000);
@@ -1408,6 +1451,7 @@
             if (storedMusicVolume !== null) {
                 backgroundMusic.volume = storedMusicVolume;
             }
+            loadGameState();
         });
 
         // Funktion zur Aktualisierung der Timer und des Spielzustandes
@@ -1433,4 +1477,3 @@
     </script>
 </body>
 </html>
-
