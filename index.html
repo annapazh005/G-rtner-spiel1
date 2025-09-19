@@ -4,13 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Süßes Gärtner-Spiel</title>
-    <!-- Tailwind CSS wird für schnelles und responsives Styling geladen -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Font für mystische Schrift -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Eigene CSS-Regeln für einen Kawaii-Stil und Farb-Variablen -->
     <style>
         :root {
             --bg-color: #F8F4E3;
@@ -199,6 +196,8 @@
             align-items: center;
             justify-content: center;
             border: 2px dashed var(--border-color);
+            min-width: 80px; /* Kleinere Größe, um den Platz zu optimieren */
+            min-height: 80px;
         }
         
         /* Neuer Style für die bewegbare Erde */
@@ -227,11 +226,8 @@
     </style>
 </head>
 <body>
-    <!-- Das Audio-Element für die Hintergrundmusik -->
-    <!-- Wichtig: 'loop' sorgt dafür, dass sich der Song wiederholt -->
     <audio id="backgroundMusic" src="https://www.bensound.com/bensound-music/bensound-sunny.mp3" loop hidden></audio>
 
-    <!-- Modal für das Zurücksetzen des Spiels -->
     <div id="resetModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <div class="kawaii-container rounded-3xl p-6 md:p-8 text-center max-w-sm">
             <h2 class="text-xl font-bold text-[var(--text-color)] mb-4">Spiel zurücksetzen</h2>
@@ -247,7 +243,6 @@
         </div>
     </div>
     
-    <!-- Modal für Nachrichten und KI-Tipps -->
     <div id="messageModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <div class="kawaii-container rounded-3xl p-6 md:p-8 text-center max-w-sm">
             <h2 id="messageTitle" class="text-xl font-bold text-[var(--text-color)] mb-4"></h2>
@@ -258,7 +253,6 @@
         </div>
     </div>
     
-    <!-- MODAL FÜR PFLANZENINFORMATIONEN -->
     <div id="plantInfoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <div class="kawaii-container rounded-3xl p-6 md:p-8 text-center max-w-sm">
             <h2 id="plantInfoTitle" class="text-xl font-bold text-[var(--text-color)] mb-4"></h2>
@@ -269,7 +263,6 @@
         </div>
     </div>
 
-    <!-- Modal für den Verkaufspreis -->
     <div id="sellModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <div class="kawaii-container rounded-3xl p-6 md:p-8 text-center max-w-sm">
             <h2 class="text-xl font-bold text-[var(--text-color)] mb-4">Preis festlegen</h2>
@@ -284,7 +277,6 @@
         </div>
     </div>
     
-    <!-- MODAL FÜR DEN ERDE-SHOP -->
     <div id="soilShopModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <div class="kawaii-container rounded-3xl p-6 md:p-8 text-center max-w-sm">
             <h2 class="text-2xl font-bold text-[var(--text-color)] mb-4">Erde Shop</h2>
@@ -318,9 +310,7 @@
     </div>
 
 
-    <!-- Splash-Screen-Container (Deckblatt) -->
     <div id="splashScreen" class="absolute inset-0 flex flex-col items-center justify-center p-4 z-10 transition-opacity duration-1000">
-        <!-- Schwebende Punkte zur Dekoration -->
         <div id="floatingPointsContainer" class="floating-points-container">
             <span class="floating-point"></span>
             <span class="floating-point"></span>
@@ -336,20 +326,16 @@
             <span class="floating-point"></span>
         </div>
 
-        <!-- Der Haupttext -->
         <h1 id="splashText" class="splash-text text-4xl md:text-5xl font-extrabold text-center transition-opacity duration-1000">
             FORREST
         </h1>
         
-        <!-- Bereich für den Namen des Spielers -->
         <p id="playerNameDisplay" class="text-[var(--text-color)] text-xl font-bold mt-4 mb-2"></p>
 
-        <!-- Start-Button, der nach 5 Sekunden erscheint -->
         <button id="startButton" class="start-button px-8 py-4 mt-8 text-xl font-bold rounded-full shadow-lg opacity-0 pointer-events-none transform -translate-y-4 transition-all duration-500 z-20">
             Start
         </button>
         
-        <!-- Das Menü (anfangs unsichtbar) -->
         <div id="menu" class="flex flex-col gap-2 mt-4 opacity-0 pointer-events-none transition-opacity duration-500 z-20">
             <button id="settingsButton" class="menu-button px-6 py-3 text-sm font-bold rounded-full shadow-lg">
                 Einstellung
@@ -363,20 +349,16 @@
         </div>
     </div>
 
-    <!-- Haupt-Spiel-Container (zunächst unsichtbar) -->
     <div id="gameLayout" class="hidden absolute inset-0 flex items-center justify-center p-4 z-10">
         
-        <!-- Der Zurück-Button ist jetzt oben links -->
         <button id="backButton" class="absolute top-4 left-4 px-4 py-2 text-sm font-bold rounded-full shadow-lg z-20">
             ← Zurück
         </button>
 
-        <!-- Münzzähler oben links -->
         <div id="coinCounter" class="absolute top-4 right-4 z-20 menu-button px-4 py-2 rounded-full shadow-lg">
             <span id="coinText">💰 50</span>
         </div>
 
-        <!-- NEUE KOMPONENTE: Level-Anzeige und XP-Balken -->
         <div id="levelContainer" class="level-container">
             <span id="levelText" class="text-sm font-bold">Level 1</span>
             <span id="xpText" class="text-xs">0 / 100 XP</span>
@@ -385,12 +367,10 @@
             </div>
         </div>
         
-        <!-- Die Schere für die Ernte -->
         <div id="scissors" class="absolute top-20 right-8 text-4xl cursor-grab z-30 transform transition-transform duration-200 ease-in-out select-none">
             ✂️
         </div>
 
-        <!-- Rechtes Seitenmenü für Werkzeuge -->
         <div id="rightMenu" class="absolute right-4 top-1/2 -translate-y-1/2 h-full flex flex-col justify-center items-center gap-4 w-1/6">
             <button id="shopButton" class="menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg">
                 Shop
@@ -406,17 +386,14 @@
             </button>
         </div>
 
-        <!-- Mülleimer-Button unten links -->
         <button id="trashButton" class="absolute bottom-4 left-4 px-4 py-2 text-2xl font-bold rounded-full shadow-lg z-20">
             🗑️
         </button>
         
-        <!-- Das Pflanzbeet ganz links -->
         <div id="plantBed" class="absolute left-4 top-1/2 -translate-y-1/2 w-48 h-96 p-4 rounded-3xl shadow-inner grid grid-cols-3 grid-rows-3 gap-4" style="background-color: #A0522D; border: 4px solid #8B4513;">
             <div id="spot-0" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
                 <span class="plant-emoji"></span>
                 <span class="timer-text text-xs mt-1"></span>
-                <!-- Neuer Button für die Pflanzeninfos -->
                 <button class="info-button hidden menu-button text-xs px-2 py-1 mt-2 rounded-full">
                     ✨ Mehr Infos
                 </button>
@@ -479,14 +456,11 @@
             </div>
         </div>
 
-        <!-- LAGER CONTAINER -->
         <div id="storageContainer" class="storage-container hidden">
             <h3 class="text-xl font-bold text-[var(--text-color)] mb-2">Lager</h3>
             <p class="text-xs text-[var(--text-color)] mb-4">Hierher ziehst du reife Pflanzen</p>
-            <!-- Pflanzen werden hier dynamisch hinzugefügt -->
-        </div>
+            </div>
 
-        <!-- Haupt-Spielbereich mit Leinwand -->
         <div id="gameContainer" class="w-full h-full kawaii-container rounded-3xl p-6 md:p-8 flex flex-col items-center max-w-lg">
             <h1 class="splash-text text-2xl md:text-3xl font-extrabold text-center mb-6">
                 FORREST
@@ -495,32 +469,26 @@
             <div class="relative w-full aspect-square border-4 rounded-xl shadow-inner overflow-hidden" style="border-color: var(--border-color);">
                 <canvas id="gameCanvas" class="w-full h-full" style="background-color: var(--container-bg);"></canvas>
                 
-                <!-- Der Shop wird über der Leinwand angezeigt -->
                 <div id="shopWindow" class="hidden absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center z-30 p-4">
                     <div class="kawaii-container rounded-3xl p-6 md:p-8 text-center max-w-sm">
                         <h2 class="text-2xl font-bold text-[var(--text-color)] mb-4">Shop</h2>
                         <div class="grid grid-cols-2 gap-4">
-                            <!-- Shop-Artikel für Bogenhanf -->
                             <button class="buy-button p-2 border-2 rounded-lg border-[var(--border-color)]" data-plant-type="Bogenhanf" data-cost="5" data-emoji="🌱">
                                 <img src="https://placehold.co/50x50/A8D1A8/4C6F4C?text=Seed" alt="Bogenhanf Samen" class="mx-auto my-2">
                                 <p class="text-[var(--text-color)]">Bogenhanf (5💰)</p>
                             </button>
-                            <!-- Shop-Artikel für Alocasia -->
                             <button class="buy-button p-2 border-2 rounded-lg border-[var(--border-color)]" data-plant-type="Alocasia" data-cost="5" data-emoji="🌿">
                                 <img src="https://placehold.co/50x50/66B066/335533?text=Seed" alt="Alocasia Samen" class="mx-auto my-2">
                                 <p class="text-[var(--text-color)]">Alocasia (5💰)</p>
                             </button>
-                            <!-- Shop-Artikel für Strelitza -->
                             <button class="buy-button p-2 border-2 rounded-lg border-[var(--border-color)]" data-plant-type="Strelitza" data-cost="5" data-emoji="🌸">
                                 <img src="https://placehold.co/50x50/FFB6C1/FF69B4?text=Seed" alt="Strelitza Samen" class="mx-auto my-2">
                                 <p class="text-[var(--text-color)]">Strelitza (5💰)</p>
                             </button>
-                            <!-- Shop-Artikel für Efeu -->
                             <button class="buy-button p-2 border-2 rounded-lg border-[var(--border-color)]" data-plant-type="Efeu" data-cost="5" data-emoji="🍃">
                                 <img src="https://placehold.co/50x50/98FB98/558B2F?text=Seed" alt="Efeu Samen" class="mx-auto my-2">
                                 <p class="text-[var(--text-color)]">Efeu (5💰)</p>
                             </button>
-                            <!-- NEUER SHOP-ARTIKEL (erst sichtbar nach Level-Up) -->
                             <button id="newPlantButton" class="buy-button hidden p-2 border-2 rounded-lg border-[var(--border-color)]" data-plant-type="Wunderblume" data-cost="20" data-emoji="✨">
                                 <img src="https://placehold.co/50x50/FFD700/8B4513?text=✨" alt="Wunderblume Samen" class="mx-auto my-2">
                                 <p class="text-[var(--text-color)]">Wunderblume (20💰)</p>
@@ -532,13 +500,11 @@
                     </div>
                 </div>
 
-                <!-- Verkaufsstand-Bereich in der Mitte der Leinwand -->
                 <div id="sellingShop" class="absolute inset-0 m-auto flex flex-col items-center justify-center w-64 h-auto rounded-xl shadow-lg border-4 border-dashed p-4" style="border-color: var(--border-color); background-color: rgba(255, 255, 255, 0.4);">
                     <p class="text-xl font-bold text-[var(--text-color)] mb-2">Shop</p>
                     <p id="sellingHint" class="text-sm font-light text-[var(--text-color)] mb-4">Pflanzen aus dem Lager hierher ziehen zum Verkaufen</p>
                     <div id="soldPlantContainer" class="selling-shop-grid">
-                        <!-- Verkaufsflächen werden hier dynamisch hinzugefügt -->
-                    </div>
+                        </div>
                 </div>
             </div>
             
@@ -550,13 +516,11 @@
         </div>
     </div>
     
-    <!-- Hintergrund-Container (zunächst unsichtbar) -->
     <div id="backgroundContainer" class="hidden w-full h-full kawaii-container rounded-3xl p-6 md:p-8 flex flex-col items-center max-w-lg">
         <h1 class="text-3xl md:text-4xl font-extrabold text-[var(--text-color)] mb-6 text-center">
             Hintergrund
         </h1>
 
-        <!-- Der Zurück-Button ist jetzt oben links -->
         <button id="backFromBackgroundButton" class="absolute top-4 left-4 px-4 py-2 text-sm font-bold rounded-full shadow-lg z-20">
             ← Zurück
         </button>
@@ -575,18 +539,15 @@
         </div>
     </div>
 
-    <!-- Einstellungs-Container (zunächst unsichtbar) -->
     <div id="settingsContainer" class="hidden w-full h-full kawaii-container rounded-3xl p-6 md:p-8 flex flex-col items-center max-w-lg">
         <h1 class="text-3xl md:text-4xl font-extrabold text-[var(--text-color)] mb-6 text-center">
             Einstellung
         </h1>
 
-        <!-- Der Zurück-Button ist jetzt oben links -->
         <button id="backFromSettingsButton" class="absolute top-4 left-4 px-4 py-2 text-sm font-bold rounded-full shadow-lg z-20">
             ← Zurück
         </button>
 
-        <!-- Helligkeitsregler -->
         <div class="w-full flex flex-col items-center mb-4">
             <p class="text-[var(--text-color)] mt-4 mb-2 text-center">Helligkeit anpassen:</p>
             <div class="w-2/3 flex justify-center gap-4 items-center">
@@ -596,7 +557,6 @@
             </div>
         </div>
         
-        <!-- Lautstärkeregler für Musik -->
         <div class="w-full flex flex-col items-center mb-4">
             <p class="text-[var(--text-color)] mb-2 text-center">Musik Lautstärke:</p>
             <div class="w-2/3 flex justify-center gap-4 items-center">
@@ -606,7 +566,6 @@
             </div>
         </div>
 
-        <!-- Namenseingabe für die Farm -->
         <div class="mt-8 flex flex-col items-center w-full">
             <p class="text-[var(--text-color)] mb-2">Dein Farmname:</p>
             <input type="text" id="farmNameInput" placeholder="Gib deinen Namen ein..." class="w-2/3 px-4 py-2 rounded-full border-2 border-[var(--border-color)] text-center text-[var(--text-color)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--border-color)]">
@@ -615,7 +574,6 @@
             </button>
         </div>
 
-        <!-- Spiel zurücksetzen Button -->
         <button id="resetGameButton" class="menu-button px-6 py-3 mt-8 text-sm font-bold rounded-full shadow-lg">
                 Spiel zurücksetzen
             </button>
@@ -700,7 +658,7 @@
 
         const floatingPoints = document.querySelectorAll('.floating-point');
         
-        const apiKey = "";
+        const apiKey = ""; // HIER DEINEN API-KEY EINFÜGEN
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
         // Funktion zur Anpassung der Canvas-Größe
@@ -959,19 +917,28 @@
             for (let i = 0; i < maxSellingSlots; i++) {
                 const soldItem = document.createElement('div');
                 soldItem.className = 'sold-plant-item';
-                
+
                 if (sellingPlants[i]) {
                     soldItem.innerHTML = `
                         <span class="text-5xl">${sellingPlants[i].emoji}</span>
-                        <p class="text-sm font-bold text-[var(--text-color)] mt-1">${sellingPlants[i].price}💰</p>
-                        <p class="text-xs text-[var(--text-color)] mt-1">${sellingPlants[i].timeRemaining}s</p>
+                        <p class="text-sm font-bold text-[var(--text-color)] mt-1">${sellingPlants[i].price || '?'}💰</p>
+                        <p class="text-xs text-[var(--text-color)] mt-1">${sellingPlants[i].timeRemaining || '?'}s</p>
                     `;
                 } else {
                     soldItem.innerHTML = `
                         <span class="text-5xl text-gray-400">?</span>
-                        <p class="text-xs text-gray-400 mt-1">Leer</p>
+                        <p class="text-xs text-gray-400 mt-1">Hier ablegen</p>
                     `;
                     soldItem.style.border = '2px dashed var(--border-color)';
+                    soldItem.dataset.slotIndex = i; // Wichtig: Füge den Index hinzu
+                    soldItem.classList.add('droppable-slot');
+
+                    soldItem.addEventListener('dragover', (e) => {
+                        e.preventDefault(); // Ermöglicht das Ablegen
+                        e.dataTransfer.dropEffect = 'move';
+                    });
+
+                    soldItem.addEventListener('drop', handleDropOnShop);
                 }
                 soldPlantContainer.appendChild(soldItem);
             }
@@ -982,7 +949,6 @@
             }
             saveGameState();
         }
-
 
         // Führt resizeCanvas und die Startanimation beim Laden der Seite aus
         window.addEventListener('load', () => {
@@ -1220,28 +1186,32 @@
             e.target.classList.remove('dragging');
         });
 
-        // Drag-and-Drop-Logik für den Verkauf im Shop
-        sellingShop.addEventListener('dragover', (e) => {
-            e.preventDefault(); // Erlaubt das Ablegen
-            e.dataTransfer.dropEffect = 'move';
-        });
-
-        sellingShop.addEventListener('drop', (e) => {
+        // NEUE FUNKTION FÜR DAS ABLEGEN IM SHOP
+        function handleDropOnShop(e) {
             e.preventDefault();
             const storageIndex = e.dataTransfer.getData('text/plain');
             const plantData = storagePlants[storageIndex];
             
-            if (sellingPlants.length < maxSellingSlots) {
-                const sellingIndex = sellingPlants.length;
-                sellingPlants[sellingIndex] = plantData;
-                storagePlants.splice(storageIndex, 1);
-                updateStorageDisplay();
-                sellModal.classList.remove('hidden');
-                priceInput.dataset.sellingIndex = sellingIndex;
-            } else {
-                showMessage('Shop voll!', 'Der Verkaufsstand ist bereits voll. Warte, bis eine Pflanze verkauft wurde.');
+            // Finde den richtigen Slot, auch wenn der Drop auf dem Kind-Element stattfindet
+            const dropTarget = e.target.closest('.droppable-slot');
+            if (!dropTarget) {
+                return;
             }
-        });
+            const targetSlotIndex = dropTarget.dataset.slotIndex;
+
+            if (plantData && targetSlotIndex !== null) {
+                 if (sellingPlants.length < maxSellingSlots) {
+                    sellingPlants[targetSlotIndex] = plantData;
+                    storagePlants.splice(storageIndex, 1);
+                    updateStorageDisplay();
+                    
+                    sellModal.classList.remove('hidden');
+                    priceInput.dataset.sellingIndex = targetSlotIndex;
+                } else {
+                    showMessage('Shop voll!', 'Der Verkaufsstand ist bereits voll. Warte, bis eine Pflanze verkauft wurde.');
+                }
+            }
+        }
 
         // Drag-and-Drop-Logik für die Schere
         scissors.addEventListener('mousedown', (e) => {
