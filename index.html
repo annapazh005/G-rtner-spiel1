@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Süßes Gärtner-Spiel</title>
+    <!-- Tailwind CSS wird für schnelles und responsives Styling geladen -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font für mystische Schrift -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Eigene CSS-Regeln für einen Kawaii-Stil und Farb-Variablen -->
     <style>
         :root {
             --bg-color: #F8F4E3;
@@ -34,6 +37,16 @@
             --text-color: #8B4513;
             --button-bg: #FF7F50;
             --button-text: #8B4513;
+        }
+
+        /* NEUE FARBKOMBINATION */
+        .theme-purple {
+            --bg-color: #E6E6FA;
+            --container-bg: #DDA0DD;
+            --border-color: #9370DB;
+            --text-color: #4B0082;
+            --button-bg: #9370DB;
+            --button-text: #E6E6FA;
         }
 
         body {
@@ -160,7 +173,7 @@
             align-items: center;
             justify-content: center;
             font-size: 2rem;
-            cursor: grab;
+            cursor: pointer;
             user-select: none;
             position: relative;
         }
@@ -196,8 +209,6 @@
             align-items: center;
             justify-content: center;
             border: 2px dashed var(--border-color);
-            min-width: 80px; /* Kleinere Größe, um den Platz zu optimieren */
-            min-height: 80px;
         }
         
         /* Neuer Style für die bewegbare Erde */
@@ -217,17 +228,95 @@
         }
         
         /* Neuer Style für das gezogene Pflanzenelement */
-        .dragging {
-            z-index: 2000; /* Stellt sicher, dass das Element über allem liegt */
-            pointer-events: none; /* Ermöglicht das Ablegen auf darunterliegenden Elementen */
-            transition: none; /* Deaktiviert die Transition beim Ziehen */
+        .draggable-plant {
+            position: fixed;
+            z-index: 2000;
+            font-size: 3rem;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            transition: none;
+        }
+        
+        /* Style für das aktive Werkzeug */
+        .tool-active {
+            filter: drop-shadow(0 0 10px var(--text-color));
+            transform: scale(1.2);
+        }
+
+        /* Neue Styles für das Verkaufs-Minispiel */
+        .price-generator {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+        
+        .price-button {
+            transition: transform 0.1s ease-in-out;
+        }
+        
+        .price-button:active {
+            transform: scale(0.9);
+        }
+        
+        .selected-plant {
+            border: 2px solid var(--text-color);
+            box-shadow: 0 0 10px var(--text-color);
+        }
+        
+        /* Banner für Level-Up */
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .level-up-banner {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+        
+        .level-up-content {
+            background-color: var(--container-bg);
+            color: var(--text-color);
+            border: 4px solid var(--border-color);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            animation: fadeInScale 0.5s ease-out;
+        }
+
+        .tool-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .plant-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 0.75rem;
         }
 
     </style>
 </head>
 <body>
+    <!-- Das Audio-Element für die Hintergrundmusik -->
+    <!-- Wichtig: 'loop' sorgt dafür, dass sich der Song wiederholt -->
     <audio id="backgroundMusic" src="https://www.bensound.com/bensound-music/bensound-sunny.mp3" loop hidden></audio>
 
+    <!-- Modal für das Zurücksetzen des Spiels -->
     <div id="resetModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <div class="kawaii-container rounded-3xl p-6 md:p-8 text-center max-w-sm">
             <h2 class="text-xl font-bold text-[var(--text-color)] mb-4">Spiel zurücksetzen</h2>
@@ -243,6 +332,7 @@
         </div>
     </div>
     
+    <!-- Modal für Nachrichten und KI-Tipps -->
     <div id="messageModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <div class="kawaii-container rounded-3xl p-6 md:p-8 text-center max-w-sm">
             <h2 id="messageTitle" class="text-xl font-bold text-[var(--text-color)] mb-4"></h2>
@@ -253,6 +343,7 @@
         </div>
     </div>
     
+    <!-- MODAL FÜR PFLANZENINFORMATIONEN -->
     <div id="plantInfoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <div class="kawaii-container rounded-3xl p-6 md:p-8 text-center max-w-sm">
             <h2 id="plantInfoTitle" class="text-xl font-bold text-[var(--text-color)] mb-4"></h2>
@@ -263,41 +354,54 @@
         </div>
     </div>
 
+    <!-- Modal für den Verkaufspreis -->
     <div id="sellModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <div class="kawaii-container rounded-3xl p-6 md:p-8 text-center max-w-sm">
             <h2 class="text-xl font-bold text-[var(--text-color)] mb-4">Preis festlegen</h2>
-            <p class="text-[var(--text-color)] mb-6">Gib den Verkaufspreis für deine Pflanze ein:</p>
-            <input type="number" id="priceInput" class="w-2/3 px-4 py-2 mb-4 rounded-full border-2 border-[var(--border-color)] text-center text-[var(--text-color)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--border-color)]" placeholder="Preis...">
-            <button id="confirmSellButton" class="menu-button px-6 py-3 text-sm font-bold rounded-full shadow-lg">
-                Verkaufen
-            </button>
-            <button id="cancelSellButton" class="menu-button px-6 py-3 mt-2 text-sm font-bold rounded-full shadow-lg">
+            <p class="text-[var(--text-color)] mb-6">Wähle einen Preis für deine Pflanze:</p>
+            <div id="priceGenerator" class="price-generator mb-4">
+                <!-- Dynamische Buttons werden hier eingefügt -->
+            </div>
+            <button id="cancelSellButton" class="menu-button px-6 py-3 text-sm font-bold rounded-full shadow-lg">
                 Abbrechen
             </button>
         </div>
     </div>
+
+    <!-- NEUES MODAL FÜR LEVEL-UP -->
+    <div id="levelUpModal" class="level-up-banner hidden">
+        <div class="level-up-content">
+            <h2 class="text-3xl font-extrabold mb-2">HERZLICHEN GLÜCKWUNSCH!</h2>
+            <h3 id="levelUpText" class="text-2xl font-bold mb-4"></h3>
+            <p id="levelUpRewards" class="text-lg mb-6"></p>
+            <button id="closeLevelUpButton" class="menu-button px-6 py-3 text-lg font-bold rounded-full shadow-lg">
+                Juhuu!
+            </button>
+        </div>
+    </div>
     
+    <!-- MODAL FÜR DEN ERDE-SHOP -->
     <div id="soilShopModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <div class="kawaii-container rounded-3xl p-6 md:p-8 text-center max-w-sm">
             <h2 class="text-2xl font-bold text-[var(--text-color)] mb-4">Erde Shop</h2>
             <div class="flex flex-col gap-4">
                 <div class="soil-shop-item">
-                    <button class="buy-soil-button menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg" data-cost="10" data-time="20">
-                        🌱
+                    <button class="buy-soil-button menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg" data-cost="10" data-time="20" data-image="https://i.imgur.com/gK9X24b.png">
+                        <img src="https://i.imgur.com/gK9X24b.png" alt="Basis Erde" class="tool-image">
                     </button>
                     <p class="text-[var(--text-color)]">Basis-Erde (10💰)</p>
                     <p class="text-xs text-[var(--text-color)]">-20s Wachstumszeit</p>
                 </div>
                 <div class="soil-shop-item">
-                    <button class="buy-soil-button menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg" data-cost="50" data-time="100">
-                        🌿
+                    <button class="buy-soil-button menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg" data-cost="50" data-time="100" data-image="https://i.imgur.com/gK9X24b.png">
+                        <img src="https://i.imgur.com/gK9X24b.png" alt="Schnelle Erde" class="tool-image">
                     </button>
                     <p class="text-[var(--text-color)]">Schnelle Erde (50💰)</p>
                     <p class="text-xs text-[var(--text-color)]">-100s Wachstumszeit</p>
                 </div>
                 <div class="soil-shop-item">
-                    <button class="buy-soil-button menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg" data-cost="100" data-time="300">
-                        ✨
+                    <button class="buy-soil-button menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg" data-cost="100" data-time="300" data-image="https://i.imgur.com/gK9X24b.png">
+                        <img src="https://i.imgur.com/gK9X24b.png" alt="Turbo Erde" class="tool-image">
                     </button>
                     <p class="text-[var(--text-color)]">Turbo-Erde (100💰)</p>
                     <p class="text-xs text-[var(--text-color)]">-300s Wachstumszeit</p>
@@ -310,7 +414,9 @@
     </div>
 
 
+    <!-- Splash-Screen-Container (Deckblatt) -->
     <div id="splashScreen" class="absolute inset-0 flex flex-col items-center justify-center p-4 z-10 transition-opacity duration-1000">
+        <!-- Schwebende Punkte zur Dekoration -->
         <div id="floatingPointsContainer" class="floating-points-container">
             <span class="floating-point"></span>
             <span class="floating-point"></span>
@@ -326,16 +432,20 @@
             <span class="floating-point"></span>
         </div>
 
+        <!-- Der Haupttext -->
         <h1 id="splashText" class="splash-text text-4xl md:text-5xl font-extrabold text-center transition-opacity duration-1000">
             FORREST
         </h1>
         
+        <!-- Bereich für den Namen des Spielers -->
         <p id="playerNameDisplay" class="text-[var(--text-color)] text-xl font-bold mt-4 mb-2"></p>
 
+        <!-- Start-Button, der nach 5 Sekunden erscheint -->
         <button id="startButton" class="start-button px-8 py-4 mt-8 text-xl font-bold rounded-full shadow-lg opacity-0 pointer-events-none transform -translate-y-4 transition-all duration-500 z-20">
             Start
         </button>
         
+        <!-- Das Menü (anfangs unsichtbar) -->
         <div id="menu" class="flex flex-col gap-2 mt-4 opacity-0 pointer-events-none transition-opacity duration-500 z-20">
             <button id="settingsButton" class="menu-button px-6 py-3 text-sm font-bold rounded-full shadow-lg">
                 Einstellung
@@ -349,16 +459,20 @@
         </div>
     </div>
 
+    <!-- Haupt-Spiel-Container (zunächst unsichtbar) -->
     <div id="gameLayout" class="hidden absolute inset-0 flex items-center justify-center p-4 z-10">
         
+        <!-- Der Zurück-Button ist jetzt oben links -->
         <button id="backButton" class="absolute top-4 left-4 px-4 py-2 text-sm font-bold rounded-full shadow-lg z-20">
             ← Zurück
         </button>
 
+        <!-- Münzzähler oben links -->
         <div id="coinCounter" class="absolute top-4 right-4 z-20 menu-button px-4 py-2 rounded-full shadow-lg">
-            <span id="coinText">💰 50</span>
+            <span id="coinText">💰 100</span>
         </div>
 
+        <!-- NEUE KOMPONENTE: Level-Anzeige und XP-Balken -->
         <div id="levelContainer" class="level-container">
             <span id="levelText" class="text-sm font-bold">Level 1</span>
             <span id="xpText" class="text-xs">0 / 100 XP</span>
@@ -367,10 +481,21 @@
             </div>
         </div>
         
-        <div id="scissors" class="absolute top-20 right-8 text-4xl cursor-grab z-30 transform transition-transform duration-200 ease-in-out select-none">
+        <!-- Die Schere für die Ernte -->
+        <div id="scissors" class="absolute top-20 right-8 text-4xl cursor-pointer z-30 transform transition-transform duration-200 ease-in-out select-none">
             ✂️
         </div>
+        <!-- NEU: Gießkanne für die Interaktion mit Pflanzen -->
+        <div id="wateringCan" class="absolute top-40 right-8 text-4xl cursor-pointer z-30 transform transition-transform duration-200 ease-in-out select-none">
+            🚰
+        </div>
+        
+        <!-- NEU: Wunderdüngersack (erst ab Level 4 sichtbar) -->
+        <div id="magicFertilizer" class="hidden absolute top-60 right-8 text-4xl cursor-pointer z-30 transform transition-transform duration-200 ease-in-out select-none">
+            🧪
+        </div>
 
+        <!-- Rechtes Seitenmenü für Werkzeuge -->
         <div id="rightMenu" class="absolute right-4 top-1/2 -translate-y-1/2 h-full flex flex-col justify-center items-center gap-4 w-1/6">
             <button id="shopButton" class="menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg">
                 Shop
@@ -386,14 +511,17 @@
             </button>
         </div>
 
+        <!-- Mülleimer-Button unten links -->
         <button id="trashButton" class="absolute bottom-4 left-4 px-4 py-2 text-2xl font-bold rounded-full shadow-lg z-20">
             🗑️
         </button>
         
+        <!-- Das Pflanzbeet ganz links -->
         <div id="plantBed" class="absolute left-4 top-1/2 -translate-y-1/2 w-48 h-96 p-4 rounded-3xl shadow-inner grid grid-cols-3 grid-rows-3 gap-4" style="background-color: #A0522D; border: 4px solid #8B4513;">
             <div id="spot-0" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
                 <span class="plant-emoji"></span>
                 <span class="timer-text text-xs mt-1"></span>
+                <span class="status-emoji absolute top-1 right-1 text-2xl"></span>
                 <button class="info-button hidden menu-button text-xs px-2 py-1 mt-2 rounded-full">
                     ✨ Mehr Infos
                 </button>
@@ -401,6 +529,7 @@
             <div id="spot-1" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
                 <span class="plant-emoji"></span>
                 <span class="timer-text text-xs mt-1"></span>
+                <span class="status-emoji absolute top-1 right-1 text-2xl"></span>
                 <button class="info-button hidden menu-button text-xs px-2 py-1 mt-2 rounded-full">
                     ✨ Mehr Infos
                 </button>
@@ -408,6 +537,7 @@
             <div id="spot-2" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
                 <span class="plant-emoji"></span>
                 <span class="timer-text text-xs mt-1"></span>
+                <span class="status-emoji absolute top-1 right-1 text-2xl"></span>
                 <button class="info-button hidden menu-button text-xs px-2 py-1 mt-2 rounded-full">
                     ✨ Mehr Infos
                 </button>
@@ -415,6 +545,7 @@
             <div id="spot-3" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
                 <span class="plant-emoji"></span>
                 <span class="timer-text text-xs mt-1"></span>
+                <span class="status-emoji absolute top-1 right-1 text-2xl"></span>
                 <button class="info-button hidden menu-button text-xs px-2 py-1 mt-2 rounded-full">
                     ✨ Mehr Infos
                 </button>
@@ -422,6 +553,7 @@
             <div id="spot-4" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
                 <span class="plant-emoji"></span>
                 <span class="timer-text text-xs mt-1"></span>
+                <span class="status-emoji absolute top-1 right-1 text-2xl"></span>
                 <button class="info-button hidden menu-button text-xs px-2 py-1 mt-2 rounded-full">
                     ✨ Mehr Infos
                 </button>
@@ -429,6 +561,7 @@
             <div id="spot-5" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
                 <span class="plant-emoji"></span>
                 <span class="timer-text text-xs mt-1"></span>
+                <span class="status-emoji absolute top-1 right-1 text-2xl"></span>
                 <button class="info-button hidden menu-button text-xs px-2 py-1 mt-2 rounded-full">
                     ✨ Mehr Infos
                 </button>
@@ -436,6 +569,7 @@
             <div id="spot-6" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
                 <span class="plant-emoji"></span>
                 <span class="timer-text text-xs mt-1"></span>
+                <span class="status-emoji absolute top-1 right-1 text-2xl"></span>
                 <button class="info-button hidden menu-button text-xs px-2 py-1 mt-2 rounded-full">
                     ✨ Mehr Infos
                 </button>
@@ -443,6 +577,7 @@
             <div id="spot-7" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
                 <span class="plant-emoji"></span>
                 <span class="timer-text text-xs mt-1"></span>
+                <span class="status-emoji absolute top-1 right-1 text-2xl"></span>
                 <button class="info-button hidden menu-button text-xs px-2 py-1 mt-2 rounded-full">
                     ✨ Mehr Infos
                 </button>
@@ -450,17 +585,21 @@
             <div id="spot-8" class="plant-spot w-full h-full rounded-lg bg-gray-600 bg-opacity-50 flex items-center justify-center text-5xl flex-col" draggable="false">
                 <span class="plant-emoji"></span>
                 <span class="timer-text text-xs mt-1"></span>
+                <span class="status-emoji absolute top-1 right-1 text-2xl"></span>
                 <button class="info-button hidden menu-button text-xs px-2 py-1 mt-2 rounded-full">
                     ✨ Mehr Infos
                 </button>
             </div>
         </div>
 
+        <!-- LAGER CONTAINER -->
         <div id="storageContainer" class="storage-container hidden">
             <h3 class="text-xl font-bold text-[var(--text-color)] mb-2">Lager</h3>
-            <p class="text-xs text-[var(--text-color)] mb-4">Hierher ziehst du reife Pflanzen</p>
-            </div>
+            <p class="text-xs text-[var(--text-color)] mb-4">Pflanzen, die hier liegen, kannst du in den Shop ziehen.</p>
+            <!-- Pflanzen werden hier dynamisch hinzugefügt -->
+        </div>
 
+        <!-- Haupt-Spielbereich mit Leinwand -->
         <div id="gameContainer" class="w-full h-full kawaii-container rounded-3xl p-6 md:p-8 flex flex-col items-center max-w-lg">
             <h1 class="splash-text text-2xl md:text-3xl font-extrabold text-center mb-6">
                 FORREST
@@ -469,26 +608,32 @@
             <div class="relative w-full aspect-square border-4 rounded-xl shadow-inner overflow-hidden" style="border-color: var(--border-color);">
                 <canvas id="gameCanvas" class="w-full h-full" style="background-color: var(--container-bg);"></canvas>
                 
+                <!-- Der Shop wird über der Leinwand angezeigt -->
                 <div id="shopWindow" class="hidden absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center z-30 p-4">
                     <div class="kawaii-container rounded-3xl p-6 md:p-8 text-center max-w-sm">
                         <h2 class="text-2xl font-bold text-[var(--text-color)] mb-4">Shop</h2>
                         <div class="grid grid-cols-2 gap-4">
+                            <!-- Shop-Artikel für Bogenhanf -->
                             <button class="buy-button p-2 border-2 rounded-lg border-[var(--border-color)]" data-plant-type="Bogenhanf" data-cost="5" data-emoji="🌱">
                                 <img src="https://placehold.co/50x50/A8D1A8/4C6F4C?text=Seed" alt="Bogenhanf Samen" class="mx-auto my-2">
                                 <p class="text-[var(--text-color)]">Bogenhanf (5💰)</p>
                             </button>
+                            <!-- Shop-Artikel für Alocasia -->
                             <button class="buy-button p-2 border-2 rounded-lg border-[var(--border-color)]" data-plant-type="Alocasia" data-cost="5" data-emoji="🌿">
                                 <img src="https://placehold.co/50x50/66B066/335533?text=Seed" alt="Alocasia Samen" class="mx-auto my-2">
                                 <p class="text-[var(--text-color)]">Alocasia (5💰)</p>
                             </button>
+                            <!-- Shop-Artikel für Strelitza -->
                             <button class="buy-button p-2 border-2 rounded-lg border-[var(--border-color)]" data-plant-type="Strelitza" data-cost="5" data-emoji="🌸">
                                 <img src="https://placehold.co/50x50/FFB6C1/FF69B4?text=Seed" alt="Strelitza Samen" class="mx-auto my-2">
                                 <p class="text-[var(--text-color)]">Strelitza (5💰)</p>
                             </button>
+                            <!-- Shop-Artikel für Efeu -->
                             <button class="buy-button p-2 border-2 rounded-lg border-[var(--border-color)]" data-plant-type="Efeu" data-cost="5" data-emoji="🍃">
                                 <img src="https://placehold.co/50x50/98FB98/558B2F?text=Seed" alt="Efeu Samen" class="mx-auto my-2">
                                 <p class="text-[var(--text-color)]">Efeu (5💰)</p>
                             </button>
+                            <!-- NEUER SHOP-ARTIKEL (erst sichtbar nach Level-Up) -->
                             <button id="newPlantButton" class="buy-button hidden p-2 border-2 rounded-lg border-[var(--border-color)]" data-plant-type="Wunderblume" data-cost="20" data-emoji="✨">
                                 <img src="https://placehold.co/50x50/FFD700/8B4513?text=✨" alt="Wunderblume Samen" class="mx-auto my-2">
                                 <p class="text-[var(--text-color)]">Wunderblume (20💰)</p>
@@ -500,11 +645,13 @@
                     </div>
                 </div>
 
+                <!-- Verkaufsstand-Bereich in der Mitte der Leinwand -->
                 <div id="sellingShop" class="absolute inset-0 m-auto flex flex-col items-center justify-center w-64 h-auto rounded-xl shadow-lg border-4 border-dashed p-4" style="border-color: var(--border-color); background-color: rgba(255, 255, 255, 0.4);">
                     <p class="text-xl font-bold text-[var(--text-color)] mb-2">Shop</p>
                     <p id="sellingHint" class="text-sm font-light text-[var(--text-color)] mb-4">Pflanzen aus dem Lager hierher ziehen zum Verkaufen</p>
                     <div id="soldPlantContainer" class="selling-shop-grid">
-                        </div>
+                        <!-- Verkaufsflächen werden hier dynamisch hinzugefügt -->
+                    </div>
                 </div>
             </div>
             
@@ -516,11 +663,13 @@
         </div>
     </div>
     
+    <!-- Hintergrund-Container (zunächst unsichtbar) -->
     <div id="backgroundContainer" class="hidden w-full h-full kawaii-container rounded-3xl p-6 md:p-8 flex flex-col items-center max-w-lg">
         <h1 class="text-3xl md:text-4xl font-extrabold text-[var(--text-color)] mb-6 text-center">
             Hintergrund
         </h1>
 
+        <!-- Der Zurück-Button ist jetzt oben links -->
         <button id="backFromBackgroundButton" class="absolute top-4 left-4 px-4 py-2 text-sm font-bold rounded-full shadow-lg z-20">
             ← Zurück
         </button>
@@ -536,18 +685,25 @@
             <button id="themeOrangeButton" class="menu-button px-6 py-3 text-sm font-bold rounded-full shadow-lg">
                 Orange / Rot
             </button>
+            <!-- NEUER BUTTON FÜR LILA-FARBKOMBINATION -->
+            <button id="themePurpleButton" class="menu-button px-6 py-3 text-sm font-bold rounded-full shadow-lg">
+                Lila / Pink
+            </button>
         </div>
     </div>
 
+    <!-- Einstellungs-Container (zunächst unsichtbar) -->
     <div id="settingsContainer" class="hidden w-full h-full kawaii-container rounded-3xl p-6 md:p-8 flex flex-col items-center max-w-lg">
         <h1 class="text-3xl md:text-4xl font-extrabold text-[var(--text-color)] mb-6 text-center">
             Einstellung
         </h1>
 
+        <!-- Der Zurück-Button ist jetzt oben links -->
         <button id="backFromSettingsButton" class="absolute top-4 left-4 px-4 py-2 text-sm font-bold rounded-full shadow-lg z-20">
             ← Zurück
         </button>
 
+        <!-- Helligkeitsregler -->
         <div class="w-full flex flex-col items-center mb-4">
             <p class="text-[var(--text-color)] mt-4 mb-2 text-center">Helligkeit anpassen:</p>
             <div class="w-2/3 flex justify-center gap-4 items-center">
@@ -557,6 +713,7 @@
             </div>
         </div>
         
+        <!-- Lautstärkeregler für Musik -->
         <div class="w-full flex flex-col items-center mb-4">
             <p class="text-[var(--text-color)] mb-2 text-center">Musik Lautstärke:</p>
             <div class="w-2/3 flex justify-center gap-4 items-center">
@@ -566,6 +723,7 @@
             </div>
         </div>
 
+        <!-- Namenseingabe für die Farm -->
         <div class="mt-8 flex flex-col items-center w-full">
             <p class="text-[var(--text-color)] mb-2">Dein Farmname:</p>
             <input type="text" id="farmNameInput" placeholder="Gib deinen Namen ein..." class="w-2/3 px-4 py-2 rounded-full border-2 border-[var(--border-color)] text-center text-[var(--text-color)] bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--border-color)]">
@@ -574,9 +732,26 @@
             </button>
         </div>
 
+        <!-- Spiel zurücksetzen Button -->
         <button id="resetGameButton" class="menu-button px-6 py-3 mt-8 text-sm font-bold rounded-full shadow-lg">
                 Spiel zurücksetzen
             </button>
+    </div>
+    
+    <!-- Modal für das Wunderwerkzeug (Level 4) -->
+    <div id="magicToolModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div class="kawaii-container rounded-3xl p-6 md:p-8 text-center max-w-sm">
+            <h2 class="text-xl font-bold text-[var(--text-color)] mb-4">Wunderdünger</h2>
+            <p class="text-[var(--text-color)] mb-6">Möchtest du den Wunderdünger für 150💰 kaufen? Er beschleunigt das Wachstum aller Pflanzen auf deinem Beet für 3 Minuten.</p>
+            <div class="flex justify-center gap-4">
+                <button id="buyMagicToolButton" class="menu-button px-6 py-3 text-sm font-bold rounded-full shadow-lg">
+                    Ja, kaufen
+                </button>
+                <button id="cancelMagicToolButton" class="menu-button px-6 py-3 text-sm font-bold rounded-full shadow-lg">
+                    Abbrechen
+                </button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -599,6 +774,7 @@
         const themeBeigeButton = document.getElementById('themeBeigeButton');
         const themeBlueButton = document.getElementById('themeBlueButton');
         const themeOrangeButton = document.getElementById('themeOrangeButton');
+        const themePurpleButton = document.getElementById('themePurpleButton'); // NEUER BUTTON
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const backgroundMusic = document.getElementById('backgroundMusic');
@@ -621,44 +797,69 @@
         const plantBed = document.getElementById('plantBed');
         const storageContainer = document.getElementById('storageContainer');
         const soilButton = document.getElementById('soilButton');
-        
+        const wateringCan = document.getElementById('wateringCan');
+        const magicFertilizer = document.getElementById('magicFertilizer');
+        const magicToolModal = document.getElementById('magicToolModal');
+        const buyMagicToolButton = document.getElementById('buyMagicToolButton');
+        const cancelMagicToolButton = document.getElementById('cancelMagicToolButton');
+
         // NEUE MODAL-ELEMENTE
         const plantInfoModal = document.getElementById('plantInfoModal');
         const plantInfoTitle = document.getElementById('plantInfoTitle');
         const plantInfoContent = document.getElementById('plantInfoContent');
         const closePlantInfoButton = document.getElementById('closePlantInfoButton');
         const sellModal = document.getElementById('sellModal');
-        const priceInput = document.getElementById('priceInput');
-        const confirmSellButton = document.getElementById('confirmSellButton');
+        const priceGenerator = document.getElementById('priceGenerator');
         const cancelSellButton = document.getElementById('cancelSellButton');
         const sellingHint = document.getElementById('sellingHint');
         const soldPlantContainer = document.getElementById('soldPlantContainer');
-        const soldPlantDivs = document.querySelectorAll('.sold-plant-item');
         const soilShopModal = document.getElementById('soilShopModal');
         const closeSoilShopButton = document.getElementById('closeSoilShopButton');
+        const levelUpModal = document.getElementById('levelUpModal');
+        const levelUpText = document.getElementById('levelUpText');
+        const levelUpRewards = document.getElementById('levelUpRewards');
+        const closeLevelUpButton = document.getElementById('closeLevelUpButton');
         
         let isMusicPlaying = false;
-        let coins = 50;
+        let coins = 100; // Startguthaben auf 100 erhöht
         let plants = Array(plantSpots.length).fill(null);
         let storagePlants = [];
-        let isDraggingScissors = false;
-        let dragOffset = { x: 0, y: 0 };
-        let draggedPlant = null;
-        let draggedPlantIndex = null;
         let sellingPlants = [];
         const maxSellingSlots = 3;
         
         let level = 1;
         let currentXp = 0;
         const XP_NEEDED = {
-            1: 100,
-            2: 250,
-            3: 500
+            1: 80,
+            2: 150,
+            3: 500,
+            4: 800,
+            5: 1200,
+            6: 2000,
+            7: 2500,
+            8: 3000,
+            9: 4000
+        };
+
+        const PLANT_BASE_VALUES = {
+            'Bogenhanf': 20,
+            'Alocasia': 30,
+            'Strelitza': 40,
+            'Efeu': 25,
+            'Wunderblume': 100
+        };
+        
+        const PLANT_IMAGES = {
+            'Bogenhanf': 'https://i.imgur.com/2sA8F9d.png',
+            'Alocasia': 'https://i.imgur.com/dK3f0kP.png',
+            'Strelitza': 'https://i.imgur.com/3Z5hJ1K.png',
+            'Efeu': 'https://i.imgur.com/vHq4wW9.png',
+            'Wunderblume': 'https://i.imgur.com/V2n7b0s.png'
         };
 
         const floatingPoints = document.querySelectorAll('.floating-point');
         
-        const apiKey = ""; // HIER DEINEN API-KEY EINFÜGEN
+        const apiKey = "";
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
         // Funktion zur Anpassung der Canvas-Größe
@@ -716,6 +917,8 @@
             } catch (error) {
                 console.error("Error fetching Gemini tip:", error);
                 plantInfoContent.textContent = "Fehler beim Laden der Informationen. Bitte versuche es noch einmal.";
+            } finally {
+                plantInfoButton.disabled = false;
             }
         }
         
@@ -738,6 +941,7 @@
         
         // Funktion, um zum Menü zurückzukehren und die Buttons sichtbar zu machen
         function showMenu() {
+            splashText.classList.remove('opacity-100');
             splashText.classList.add('opacity-0');
             startButton.classList.remove('opacity-0', 'pointer-events-none');
             startButton.classList.add('opacity-100');
@@ -749,7 +953,7 @@
 
         // Funktion, die die Animation für das Deckblatt startet (nur einmal beim Laden der Seite)
         function startIntroAnimation() {
-            splashText.classList.remove('opacity-0');
+            splashText.classList.add('opacity-100');
             startButton.classList.add('opacity-0', 'pointer-events-none');
             startButton.style.transform = 'translateY(-4px)';
             menu.classList.add('opacity-0', 'pointer-events-none');
@@ -757,6 +961,7 @@
             updatePlayerNameDisplay();
 
             setTimeout(() => {
+                splashText.classList.remove('opacity-100');
                 splashText.classList.add('opacity-0');
                 setTimeout(() => {
                     showMenu();
@@ -800,24 +1005,52 @@
         
         // Level-Up-Logik
         function checkLevelUp() {
-            const requiredXp = getRequiredXpForNextLevel();
+            const requiredXp = XP_NEEDED[level] || 99999;
             if (currentXp >= requiredXp) {
                 level++;
                 currentXp = currentXp - requiredXp;
                 
-                if (level === 2) {
-                    coins += 15;
-                    updateCoinDisplay();
-                    newPlantButton.classList.remove('hidden');
-                    showMessage(`Level-Up!`, `Du hast Level ${level} erreicht! Du bekommst 15 Münzen und eine neue Pflanze im Shop!`);
-                } else {
-                    showMessage(`Level-Up!`, `Du hast Level ${level} erreicht!`);
-                }
+                let rewards = "";
                 
+                if (level === 2) {
+                    coins += 100;
+                    rewards = "Du hast 100 Münzen, eine neue Pflanze und eine neue Farbe freigeschaltet!";
+                    document.body.classList.remove('theme-blue', 'theme-orange');
+                    document.body.classList.add('theme-purple');
+                } else if (level === 3) {
+                    coins += 200;
+                    rewards = "Du hast 200 Münzen freigeschaltet!";
+                } else if (level === 4) {
+                    coins += 300;
+                    rewards = "Du hast 300 Münzen freigeschaltet! Ein neues Werkzeug ist verfügbar.";
+                    magicFertilizer.classList.remove('hidden');
+                } else if (level === 5) {
+                    coins += 450;
+                    rewards = "Du hast 450 Münzen freigeschaltet!";
+                } else if (level === 7) {
+                    coins += 500;
+                    rewards = "Du hast 500 Münzen freigeschaltet!";
+                } else if (level === 8) {
+                    coins += 200;
+                    rewards = "Du hast 200 Münzen freigeschaltet!";
+                } else if (level === 9) {
+                    coins += 150;
+                    rewards = "Du hast 150 Münzen freigeschaltet!";
+                }
+
+                updateCoinDisplay();
                 updateLevelDisplay();
+                
+                levelUpText.textContent = `Du hast Level ${level} erreicht!`;
+                levelUpRewards.textContent = rewards;
+                levelUpModal.classList.remove('hidden');
             }
         }
         
+        closeLevelUpButton.addEventListener('click', () => {
+            levelUpModal.classList.add('hidden');
+        });
+
         function saveGameState() {
             const gameState = {
                 coins,
@@ -835,7 +1068,7 @@
             if (savedState) {
                 const gameState = JSON.parse(savedState);
                 coins = gameState.coins;
-                plants = gameState.plants;
+                plants = gameState.plants.map(plant => plant ? { ...plant, isGrowing: true, hasWeed: plant.hasWeed || false, waterStatus: plant.waterStatus || 100 } : null);
                 storagePlants = gameState.storagePlants;
                 sellingPlants = gameState.sellingPlants;
                 level = gameState.level;
@@ -870,27 +1103,35 @@
                 const plantEmoji = spot.querySelector('.plant-emoji');
                 const timerText = spot.querySelector('.timer-text');
                 const infoButton = spot.querySelector('.info-button');
+                const statusEmoji = spot.querySelector('.status-emoji');
 
                 if (plant) {
                     plantEmoji.textContent = plant.emoji;
                     timerText.classList.remove('hidden');
                     if (plant.isReady) {
-                        spot.setAttribute('draggable', true);
                         spot.classList.add('cursor-grab');
                         timerText.textContent = "Bereit!";
                         infoButton.classList.remove('hidden');
+                        statusEmoji.textContent = '📦';
                     } else {
-                        spot.removeAttribute('draggable');
                         spot.classList.remove('cursor-grab');
                         infoButton.classList.add('hidden');
+
+                        if(plant.hasWeed) {
+                            statusEmoji.textContent = '🌱';
+                        } else if (plant.waterStatus < 30) {
+                            statusEmoji.textContent = '💧';
+                        } else {
+                            statusEmoji.textContent = '';
+                        }
                     }
                 } else {
                     plantEmoji.textContent = '';
-                    spot.removeAttribute('draggable');
                     spot.classList.remove('cursor-grab');
                     timerText.textContent = '';
                     timerText.classList.add('hidden');
                     infoButton.classList.add('hidden');
+                    statusEmoji.textContent = '';
                 }
             });
             saveGameState();
@@ -904,8 +1145,7 @@
                 plantDiv.className = 'storage-plant';
                 plantDiv.textContent = plant.emoji;
                 plantDiv.dataset.storageIndex = index;
-                plantDiv.setAttribute('draggable', true);
-                plantDiv.classList.add('cursor-grab');
+                plantDiv.classList.add('cursor-pointer');
                 storageContainer.appendChild(plantDiv);
             });
             saveGameState();
@@ -917,28 +1157,20 @@
             for (let i = 0; i < maxSellingSlots; i++) {
                 const soldItem = document.createElement('div');
                 soldItem.className = 'sold-plant-item';
-
+                soldItem.dataset.sellingIndex = i;
+                
                 if (sellingPlants[i]) {
                     soldItem.innerHTML = `
                         <span class="text-5xl">${sellingPlants[i].emoji}</span>
-                        <p class="text-sm font-bold text-[var(--text-color)] mt-1">${sellingPlants[i].price || '?'}💰</p>
-                        <p class="text-xs text-[var(--text-color)] mt-1">${sellingPlants[i].timeRemaining || '?'}s</p>
+                        <p class="text-sm font-bold text-[var(--text-color)] mt-1">${sellingPlants[i].price}💰</p>
+                        <p class="text-xs text-[var(--text-color)] mt-1">${sellingPlants[i].timeRemaining}s</p>
                     `;
                 } else {
                     soldItem.innerHTML = `
                         <span class="text-5xl text-gray-400">?</span>
-                        <p class="text-xs text-gray-400 mt-1">Hier ablegen</p>
+                        <p class="text-xs text-gray-400 mt-1">Leer</p>
                     `;
                     soldItem.style.border = '2px dashed var(--border-color)';
-                    soldItem.dataset.slotIndex = i; // Wichtig: Füge den Index hinzu
-                    soldItem.classList.add('droppable-slot');
-
-                    soldItem.addEventListener('dragover', (e) => {
-                        e.preventDefault(); // Ermöglicht das Ablegen
-                        e.dataTransfer.dropEffect = 'move';
-                    });
-
-                    soldItem.addEventListener('drop', handleDropOnShop);
                 }
                 soldPlantContainer.appendChild(soldItem);
             }
@@ -950,8 +1182,9 @@
             saveGameState();
         }
 
+
         // Führt resizeCanvas und die Startanimation beim Laden der Seite aus
-        window.addEventListener('load', () => {
+        window.onload = function() {
             resizeCanvas();
             loadGameState();
             showScreen('splashScreen');
@@ -960,7 +1193,20 @@
             updateLevelDisplay();
             updateStorageDisplay();
             updateSellingShopDisplay();
-        });
+            setupFloatingPoints();
+            const storedMusicVolume = localStorage.getItem('musicVolume');
+            if (storedMusicVolume !== null) {
+                backgroundMusic.volume = storedMusicVolume;
+            }
+            
+            // Show new features based on loaded level
+            if (level >= 4) {
+                magicFertilizer.classList.remove('hidden');
+            }
+            if (level >= 2) {
+                document.body.classList.add('theme-purple');
+            }
+        };
 
         // Führt resizeCanvas bei jeder Fenstergrößenänderung aus
         window.addEventListener('resize', resizeCanvas);
@@ -1038,17 +1284,22 @@
         
         // Event-Listener für die Farbauswahl-Buttons
         themeBeigeButton.addEventListener('click', () => {
-            document.body.classList.remove('theme-blue', 'theme-orange');
+            document.body.classList.remove('theme-blue', 'theme-orange', 'theme-purple');
         });
 
         themeBlueButton.addEventListener('click', () => {
-            document.body.classList.remove('theme-orange');
+            document.body.classList.remove('theme-orange', 'theme-purple');
             document.body.classList.add('theme-blue');
         });
         
         themeOrangeButton.addEventListener('click', () => {
-            document.body.classList.remove('theme-blue');
+            document.body.classList.remove('theme-blue', 'theme-purple');
             document.body.classList.add('theme-orange');
+        });
+        
+        themePurpleButton.addEventListener('click', () => {
+            document.body.classList.remove('theme-blue', 'theme-orange');
+            document.body.classList.add('theme-purple');
         });
 
         // Event-Listener für das Speichern des Namens
@@ -1092,12 +1343,14 @@
             if (storageContainer.classList.contains('hidden')) {
                 // Zeige das Lager an
                 plantBed.classList.add('hidden');
+                sellingShop.classList.add('hidden');
                 storageContainer.classList.remove('hidden');
                 toggleViewButton.textContent = 'Zum Beet';
                 updateStorageDisplay();
             } else {
                 // Zeige das Beet an
                 storageContainer.classList.add('hidden');
+                sellingShop.classList.remove('hidden');
                 plantBed.classList.remove('hidden');
                 toggleViewButton.textContent = 'Lager';
             }
@@ -1119,7 +1372,7 @@
                     if (freeSpotIndex !== -1) {
                         coins -= cost;
                         updateCoinDisplay();
-                        plants[freeSpotIndex] = { type: plantType, emoji: emoji, growth: growTime, isReady: false };
+                        plants[freeSpotIndex] = { type: plantType, emoji: emoji, growth: growTime, isReady: false, watered: true, waterStatus: 100, hasWeed: false };
                         updatePlantBed();
                         shopWindow.classList.add('hidden');
 
@@ -1136,193 +1389,223 @@
             });
         });
         
-        let draggedSoil = null;
+        // --- NEUE UND VERBESSERTE INTERAKTIONSLOGIK ---
+        let activeTool = null; // 'scissors', 'wateringCan', 'plant', 'soil'
+        let draggedPlantData = null;
+        let draggedPlantIndex = null;
+        let draggedPlantElement = null;
+        let draggedSoilData = null;
         let draggedSoilElement = null;
-
-        // Event-Listener für den Kauf von Erde
-        document.querySelectorAll('.buy-soil-button').forEach(button => {
-            button.addEventListener('click', () => {
-                const cost = parseInt(button.dataset.cost);
-                if (coins >= cost) {
-                    coins -= cost;
-                    updateCoinDisplay();
-                    soilShopModal.classList.add('hidden');
-
-                    draggedSoil = { 
-                        time: parseInt(button.dataset.time), 
-                        emoji: button.textContent.trim() 
-                    };
-
-                    // Erstelle ein temporäres, bewegliches Element für die Erde
-                    draggedSoilElement = document.createElement('div');
-                    draggedSoilElement.className = 'draggable-soil';
-                    draggedSoilElement.textContent = draggedSoil.emoji;
-                    document.body.appendChild(draggedSoilElement);
-                } else {
-                    showMessage('Nicht genug Münzen!', 'Du hast nicht genug Geld, um diese Erde zu kaufen.');
-                    soilShopModal.classList.add('hidden');
-                }
-            });
-        });
-
-        // Logik für die bewegbare Schere und Pflanzen (überarbeitet)
-        const getClientPosition = (e) => {
-            return e.touches ? { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY } : { clientX: e.clientX, clientY: e.clientY };
-        };
         
-        // Drag-and-Drop-Logik für Pflanzen aus dem Lager
-        storageContainer.addEventListener('dragstart', (e) => {
-            const target = e.target;
-            if (target.classList.contains('storage-plant')) {
-                e.dataTransfer.setData('text/plain', target.dataset.storageIndex);
-                e.dataTransfer.effectAllowed = 'move';
-                // Hier fügen wir die "dragging" Klasse hinzu
-                target.classList.add('dragging');
-            }
-        });
-
-        storageContainer.addEventListener('dragend', (e) => {
-            // Hier entfernen wir die "dragging" Klasse wieder
-            e.target.classList.remove('dragging');
-        });
-
-        // NEUE FUNKTION FÜR DAS ABLEGEN IM SHOP
-        function handleDropOnShop(e) {
-            e.preventDefault();
-            const storageIndex = e.dataTransfer.getData('text/plain');
-            const plantData = storagePlants[storageIndex];
-            
-            // Finde den richtigen Slot, auch wenn der Drop auf dem Kind-Element stattfindet
-            const dropTarget = e.target.closest('.droppable-slot');
-            if (!dropTarget) {
-                return;
-            }
-            const targetSlotIndex = dropTarget.dataset.slotIndex;
-
-            if (plantData && targetSlotIndex !== null) {
-                 if (sellingPlants.length < maxSellingSlots) {
-                    sellingPlants[targetSlotIndex] = plantData;
-                    storagePlants.splice(storageIndex, 1);
-                    updateStorageDisplay();
-                    
-                    sellModal.classList.remove('hidden');
-                    priceInput.dataset.sellingIndex = targetSlotIndex;
-                } else {
-                    showMessage('Shop voll!', 'Der Verkaufsstand ist bereits voll. Warte, bis eine Pflanze verkauft wurde.');
+        // Funktion, um das aktive Werkzeug zu setzen
+        function setActiveTool(tool) {
+            document.querySelectorAll('#scissors, #wateringCan, #magicFertilizer').forEach(t => t.classList.remove('tool-active'));
+            if (activeTool === tool) {
+                activeTool = null;
+            } else {
+                activeTool = tool;
+                if (tool === 'scissors') {
+                    scissors.classList.add('tool-active');
+                } else if (tool === 'wateringCan') {
+                    wateringCan.classList.add('tool-active');
+                } else if (tool === 'magicFertilizer') {
+                    magicFertilizer.classList.add('tool-active');
                 }
             }
         }
-
-        // Drag-and-Drop-Logik für die Schere
-        scissors.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            const clientPos = getClientPosition(e);
-            const rect = scissors.getBoundingClientRect();
-            dragOffset.x = clientPos.clientX - rect.left;
-            dragOffset.y = clientPos.clientY - rect.top;
-            isDraggingScissors = true;
-            scissors.style.cursor = 'grabbing';
-            scissors.style.transition = 'none';
+        
+        // Event-Listener für Schere
+        scissors.addEventListener('click', () => {
+            setActiveTool('scissors');
         });
-
-        document.addEventListener('mousemove', (e) => {
-            const clientPos = getClientPosition(e);
-            if (isDraggingScissors) {
-                const gameRect = gameLayout.getBoundingClientRect();
-                const newX = clientPos.clientX - dragOffset.x;
-                const newY = clientPos.clientY - dragOffset.y;
-                scissors.style.left = `${newX - gameRect.left}px`;
-                scissors.style.top = `${newY - gameRect.top}px`;
-            } else if (draggedSoilElement) {
-                draggedSoilElement.style.left = `${clientPos.clientX - draggedSoilElement.offsetWidth / 2}px`;
-                draggedSoilElement.style.top = `${clientPos.clientY - draggedSoilElement.offsetHeight / 2}px`;
+        
+        // Event-Listener für Gießkanne
+        wateringCan.addEventListener('click', () => {
+            setActiveTool('wateringCan');
+        });
+        
+        // Event-Listener für das neue Wunderwerkzeug (Level 4)
+        magicFertilizer.addEventListener('click', () => {
+            if (level >= 4) {
+                magicToolModal.classList.remove('hidden');
             }
         });
-
-        document.addEventListener('mouseup', (e) => {
-            if (isDraggingScissors) {
-                isDraggingScissors = false;
-                scissors.style.cursor = 'grab';
-                scissors.style.transition = 'transform 0.2s ease-in-out';
-                const clientPos = getClientPosition(e);
-                const mouseX = clientPos.clientX;
-                const mouseY = clientPos.clientY;
+        
+        buyMagicToolButton.addEventListener('click', () => {
+            if (coins >= 150) {
+                coins -= 150;
+                updateCoinDisplay();
+                magicToolModal.classList.add('hidden');
+                showMessage('Wunderdünger gekauft!', 'Das Wachstum aller Pflanzen wird für 3 Minuten beschleunigt!');
                 
-                // Ernte-Logik
-                plants.forEach((plant, index) => {
-                    if (plant && plant.isReady) {
-                        const spot = plantSpots[index];
-                        const rect = spot.getBoundingClientRect();
+                plants.forEach(plant => {
+                    if (plant && !plant.isReady) {
+                        plant.growth -= 180; // 3 Minuten
+                        if (plant.growth < 0) plant.growth = 0;
+                    }
+                });
+                updatePlantBed();
+            } else {
+                showMessage('Nicht genug Münzen!', 'Du hast nicht genug Geld, um diesen Wunderdünger zu kaufen.');
+                magicToolModal.classList.add('hidden');
+            }
+        });
+        
+        cancelMagicToolButton.addEventListener('click', () => {
+            magicToolModal.classList.add('hidden');
+        });
+
+
+        // Event-Listener für die Pflanzen im Beet
+        plantSpots.forEach((spot, index) => {
+            spot.addEventListener('click', (e) => {
+                const plant = plants[index];
+                if (!plant) return; 
+                
+                if (activeTool === 'scissors') {
+                    if (plant.hasWeed) {
+                        plant.hasWeed = false;
+                        currentXp += 5;
+                        updateLevelDisplay();
+                        checkLevelUp();
+                        updatePlantBed();
+                        showMessage('Unkraut entfernt!', 'Du hast das Unkraut erfolgreich entfernt und 5 XP erhalten!');
+                    } else if (plant.isReady) {
+                        storagePlants.push(plant);
+                        plants[index] = null;
+                        updatePlantBed();
+                        updateStorageDisplay();
+                        showMessage('Ernte!', 'Du hast eine Pflanze geerntet und in dein Lager gelegt.');
+                    } else {
+                        showMessage('Fehler', 'Du kannst die Schere nur zum Ernten oder zum Entfernen von Unkraut benutzen.');
+                    }
+                } else if (activeTool === 'wateringCan') {
+                    if (plant.waterStatus < 100) {
+                        plant.waterStatus = 100;
+                        currentXp += 2;
+                        updateLevelDisplay();
+                        checkLevelUp();
+                        updatePlantBed();
+                        showMessage('Gegossen!', 'Deine Pflanze ist jetzt glücklich und wächst schneller! (+2 XP)');
+                    } else {
+                        showMessage('Schon nass!', 'Diese Pflanze ist schon ausreichend gegossen.');
+                    }
+                }
+                
+                if (activeTool) {
+                    setActiveTool(null);
+                }
+            });
+        });
+        
+        // Klick-Logik für Pflanzen aus dem Lager zum Shop
+        let selectedStoragePlant = null;
+        storageContainer.addEventListener('click', (e) => {
+            const target = e.target.closest('.storage-plant');
+            if (target) {
+                const index = parseInt(target.dataset.storageIndex);
+                if (selectedStoragePlant === index) {
+                    selectedStoragePlant = null;
+                    target.classList.remove('selected-plant');
+                } else {
+                    document.querySelectorAll('.storage-plant').forEach(p => p.classList.remove('selected-plant'));
+                    selectedStoragePlant = index;
+                    target.classList.add('selected-plant');
+                }
+            }
+        });
+        
+        // Klick-Logik auf die Shop-Slots
+        soldPlantContainer.addEventListener('click', (e) => {
+            if (selectedStoragePlant !== null) {
+                const sellingIndex = parseInt(e.target.closest('.sold-plant-item').dataset.sellingIndex);
+                if (sellingPlants[sellingIndex] === null || !sellingPlants[sellingIndex]) { // Prüfen, ob der Platz frei ist
+                    
+                    const plantData = storagePlants[selectedStoragePlant];
+                    const tempPlant = { ...plantData };
+                    
+                    // Entferne die Pflanze aus dem Lager-Array, aber nicht aus dem Spielstand
+                    // Das machen wir erst nach dem Verkauf
+                    storagePlants.splice(selectedStoragePlant, 1);
+                    selectedStoragePlant = null;
+                    document.querySelectorAll('.storage-plant').forEach(p => p.classList.remove('selected-plant'));
+                    updateStorageDisplay();
+                    
+                    sellingPlants[sellingIndex] = tempPlant;
+                    
+                    sellModal.classList.remove('hidden');
+                    sellModal.dataset.sellingIndex = sellingIndex;
+                    
+                    priceGenerator.innerHTML = '';
+                    const prices = [10, 15, 20, 30, 40, 55, 66];
+                    const weights = [40, 30, 20, 10, 5, 3, 1]; // Höhere Gewichte für niedrigere Preise
+                    const jackpotChance = 1; // 1% für den Jackpot
+
+                    const getRandomPrice = () => {
+                        if (Math.random() * 100 < jackpotChance) {
+                            return 100; // Jackpot
+                        }
                         
-                        if (mouseX > rect.left && mouseX < rect.right && mouseY > rect.top && mouseY < rect.bottom) {
-                            storagePlants.push(plant);
-                            plants[index] = null;
-                            updatePlantBed();
-                            updateStorageDisplay();
-                            showMessage('Ernte!', 'Du hast eine Pflanze geerntet und in dein Lager gelegt.');
+                        let totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+                        let random = Math.random() * totalWeight;
+
+                        for (let i = 0; i < prices.length; i++) {
+                            random -= weights[i];
+                            if (random <= 0) {
+                                return prices[i];
+                            }
                         }
+                        return prices[0]; // Fallback
+                    };
+
+                    for (let i = 0; i < 3; i++) {
+                        const price = getRandomPrice();
+                        const button = document.createElement('button');
+                        button.className = 'price-button menu-button px-4 py-2 text-sm font-bold rounded-full shadow-lg';
+                        button.textContent = `${price}💰`;
+                        button.dataset.price = price;
+                        priceGenerator.appendChild(button);
                     }
-                });
-            } else if (draggedSoilElement) {
-                let soilApplied = false;
-                plants.forEach((plant, index) => {
-                    const spot = plantSpots[index];
-                    const rect = spot.getBoundingClientRect();
-                    if (e.clientX > rect.left && e.clientX < rect.right && e.clientY > rect.top && e.clientY < rect.bottom) {
-                        if (plant) {
-                            plant.growth -= draggedSoil.time;
-                            if (plant.growth < 0) plant.growth = 0;
-                            soilApplied = true;
-                            showMessage('Erde angewendet!', `Die Wachstumszeit wurde um ${draggedSoil.time}s reduziert.`);
-                            updatePlantBed();
-                        }
-                    }
-                });
-                draggedSoilElement.remove();
-                draggedSoilElement = null;
-                draggedSoil = null;
-                if (!soilApplied) {
-                    showMessage('Keine Pflanze gefunden!', 'Du musst die Erde auf eine wachsende Pflanze fallen lassen.');
+                } else {
+                    showMessage('Shop voll!', 'Dieser Verkaufsplatz ist schon besetzt.');
                 }
             }
         });
 
-        // Verkauf bestätigen Logik
-        confirmSellButton.addEventListener('click', () => {
-            const price = parseInt(priceInput.value);
-            const sellingIndex = parseInt(priceInput.dataset.sellingIndex);
-            if (isNaN(price) || price <= 0) {
-                showMessage('Fehler', 'Bitte gib einen gültigen Preis ein!');
-                return;
-            }
-
-            sellModal.classList.add('hidden');
-            const sellTimes = [20, 60, 300];
-            const randomTime = sellTimes[Math.floor(Math.random() * sellTimes.length)];
-            
-            sellingPlants[sellingIndex].price = price;
-            sellingPlants[sellingIndex].timeRemaining = randomTime;
-            
-            sellingPlants[sellingIndex].interval = setInterval(() => {
-                sellingPlants[sellingIndex].timeRemaining--;
-                if (sellingPlants[sellingIndex].timeRemaining <= 0) {
-                    clearInterval(sellingPlants[sellingIndex].interval);
-                    coins += sellingPlants[sellingIndex].price;
-                    updateCoinDisplay();
-                    sellingPlants[sellingIndex] = null;
-                    sellingPlants = sellingPlants.filter(p => p !== null);
-                    saveGameState(); // Save state after sale
-                    showMessage('Verkauft!', `Deine Pflanze wurde für ${price} Münzen verkauft!`);
+        priceGenerator.addEventListener('click', (e) => {
+            const button = e.target.closest('.price-button');
+            if (button) {
+                const price = parseInt(button.dataset.price);
+                const sellingIndex = parseInt(sellModal.dataset.sellingIndex);
+                
+                sellModal.classList.add('hidden');
+                const sellTimes = [20, 60, 300];
+                const randomTime = sellTimes[Math.floor(Math.random() * sellTimes.length)];
+                
+                sellingPlants[sellingIndex].price = price;
+                sellingPlants[sellingIndex].timeRemaining = randomTime;
+                
+                sellingPlants[sellingIndex].interval = setInterval(() => {
+                    sellingPlants[sellingIndex].timeRemaining--;
+                    if (sellingPlants[sellingIndex].timeRemaining <= 0) {
+                        clearInterval(sellingPlants[sellingIndex].interval);
+                        coins += sellingPlants[sellingIndex].price;
+                        updateCoinDisplay();
+                        sellingPlants[sellingIndex] = null;
+                        sellingPlants = sellingPlants.filter(p => p !== null);
+                        saveGameState(); // Save state after sale
+                        showMessage('Verkauft!', `Deine Pflanze wurde für ${price} Münzen verkauft!`);
+                        updateSellingShopDisplay();
+                    }
                     updateSellingShopDisplay();
-                }
+                }, 1000);
                 updateSellingShopDisplay();
-            }, 1000);
-            updateSellingShopDisplay();
+            }
         });
 
         cancelSellButton.addEventListener('click', () => {
             sellModal.classList.add('hidden');
-            const sellingIndex = parseInt(priceInput.dataset.sellingIndex);
+            const sellingIndex = parseInt(sellModal.dataset.sellingIndex);
             if (sellingPlants[sellingIndex]) {
                 storagePlants.push(sellingPlants[sellingIndex]);
                 sellingPlants[sellingIndex] = null;
@@ -1331,7 +1614,66 @@
                 updateSellingShopDisplay();
             }
         });
+        
+        // Logik für den Erde-Kauf (Drag & Drop)
+        document.querySelectorAll('.buy-soil-button').forEach(button => {
+            button.addEventListener('mousedown', (e) => {
+                const cost = parseInt(button.dataset.cost);
+                const emoji = button.textContent.trim(); // Get the emoji from the button
+                if (coins >= cost) {
+                    soilShopModal.classList.add('hidden');
+                    draggedSoilData = { 
+                        time: parseInt(button.dataset.time), 
+                        emoji: emoji,
+                        cost: cost // Speichere die Kosten
+                    };
+                    draggedSoilElement = document.createElement('div');
+                    draggedSoilElement.className = 'draggable-soil';
+                    draggedSoilElement.textContent = draggedSoilData.emoji;
+                    document.body.appendChild(draggedSoilElement);
+                } else {
+                    showMessage('Nicht genug Münzen!', 'Du hast nicht genug Geld, um diese Erde zu kaufen.');
+                    soilShopModal.classList.add('hidden');
+                }
+            });
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (draggedSoilElement) {
+                draggedSoilElement.style.left = `${e.clientX - draggedSoilElement.offsetWidth / 2}px`;
+                draggedSoilElement.style.top = `${e.clientY - draggedSoilElement.offsetHeight / 2}px`;
+            }
+        });
 
+        document.addEventListener('mouseup', (e) => {
+            if (draggedSoilElement) {
+                let soilApplied = false;
+                plants.forEach((plant, index) => {
+                    const spot = plantSpots[index];
+                    const rect = spot.getBoundingClientRect();
+                    if (e.clientX > rect.left && e.clientX < rect.right && e.clientY > rect.top && e.clientY < rect.bottom) {
+                        if (plant) {
+                            coins -= draggedSoilData.cost; // Erst hier wird der Preis abgezogen
+                            updateCoinDisplay();
+                            plant.growth -= draggedSoilData.time;
+                            if (plant.growth < 0) plant.growth = 0;
+                            soilApplied = true;
+                            showMessage('Erde angewendet!', `Die Wachstumszeit wurde um ${draggedSoilData.time}s reduziert.`);
+                            updatePlantBed();
+                        }
+                    }
+                });
+                if (draggedSoilElement) {
+                    draggedSoilElement.remove();
+                    draggedSoilElement = null;
+                    draggedSoilData = null;
+                }
+                if (!soilApplied) {
+                    showMessage('Keine Pflanze gefunden!', 'Du musst die Erde auf eine wachsende Pflanze fallen lassen.');
+                }
+            }
+        });
+        // --- ENDE INTERAKTIONSLOGIK ---
 
         // Event-Listener für die neuen Info-Buttons
         document.querySelectorAll('.info-button').forEach((button, index) => {
@@ -1414,27 +1756,60 @@
         });
 
         // Führt die Initialisierung der schwebenden Punkte beim Laden der Seite aus
-        window.addEventListener('load', () => {
+        window.onload = function() {
+            resizeCanvas();
+            loadGameState();
+            showScreen('splashScreen');
+            startIntroAnimation();
+            updateCoinDisplay();
+            updateLevelDisplay();
+            updateStorageDisplay();
+            updateSellingShopDisplay();
             setupFloatingPoints();
-            // Stellt die Lautstärke der Musik beim Laden wieder her
             const storedMusicVolume = localStorage.getItem('musicVolume');
             if (storedMusicVolume !== null) {
                 backgroundMusic.volume = storedMusicVolume;
             }
-            loadGameState();
-        });
+            
+            // Show new features based on loaded level
+            if (level >= 4) {
+                magicFertilizer.classList.remove('hidden');
+            }
+            if (level >= 2) {
+                document.body.classList.add('theme-purple');
+            }
+        };
 
         // Funktion zur Aktualisierung der Timer und des Spielzustandes
         setInterval(() => {
             plants.forEach((plant, index) => {
                 if (plant && !plant.isReady) {
-                    plant.growth--;
+                    // Simuliert Unkraut
+                    if (!plant.hasWeed && Math.random() < 0.005) {
+                        plant.hasWeed = true;
+                        showMessage('Unkraut!', 'Eine Pflanze hat Unkraut! Benutze die Schere, um es zu entfernen.');
+                    }
+                    
+                    // Simuliert Durst
+                    if (plant.waterStatus > 0) {
+                        plant.waterStatus--;
+                    }
+                    if (plant.waterStatus < 30 && plant.waterStatus % 10 === 0) {
+                        showMessage('Durstig!', `Eine Pflanze braucht Wasser! Benutze die Gießkanne.`);
+                    }
+                    
+
+                    // Wachstums-Logik
+                    // Die Pflanze wächst nur, wenn sie weder Unkraut noch Wassermangel hat
+                    if (plant.waterStatus > 0 && !plant.hasWeed) {
+                        plant.growth--;
+                    }
+                    
                     const timerTextElement = plantSpots[index].querySelector('.timer-text');
                     
                     if (plant.growth <= 0) {
                         plant.isReady = true;
                         timerTextElement.textContent = "Bereit!";
-                        plantSpots[index].setAttribute('draggable', true);
                         plantSpots[index].classList.add('cursor-grab');
                     } else {
                         const minutes = Math.floor(plant.growth / 60);
@@ -1443,7 +1818,9 @@
                     }
                 }
             });
+            updatePlantBed();
         }, 1000);
     </script>
 </body>
 </html>
+
