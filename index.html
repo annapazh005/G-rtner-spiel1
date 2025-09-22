@@ -1102,46 +1102,46 @@
             }
         }
 
-        // Funktion zum Aktualisieren des Beetes
-        function updatePlantBed() {
-            plants.forEach((plant, index) => {
-                const spot = plantSpots[index];
-                const plantEmoji = spot.querySelector('.plant-emoji');
-                const timerText = spot.querySelector('.timer-text');
-                const infoButton = spot.querySelector('.info-button');
-                const statusEmoji = spot.querySelector('.status-emoji');
+       // Funktion zum Aktualisieren des Beetes
+function updatePlantBed() {
+    plants.forEach((plant, index) => {
+        const spot = plantSpots[index];
+        const plantEmoji = spot.querySelector('.plant-emoji');
+        const timerText = spot.querySelector('.timer-text');
+        const infoButton = spot.querySelector('.info-button');
+        const statusEmoji = spot.querySelector('.status-emoji');
 
-                if (plant) {
-                    plantEmoji.textContent = plant.emoji;
-                    timerText.classList.remove('hidden');
-                    if (plant.isReady) {
-                        spot.classList.add('cursor-grab');
-                        timerText.textContent = "Bereit!";
-                        infoButton.classList.remove('hidden');
-                        statusEmoji.textContent = '📦';
-                    } else {
-                        spot.classList.remove('cursor-grab');
-                        infoButton.classList.add('hidden');
+        if (plant) {
+            plantEmoji.innerHTML = `<img src="${PLANT_IMAGES[plant.type]}" alt="${plant.type}" class="plant-img">`;
+            timerText.classList.remove('hidden');
+            if (plant.isReady) {
+                spot.classList.add('cursor-grab');
+                timerText.textContent = "Bereit!";
+                infoButton.classList.remove('hidden');
+                statusEmoji.textContent = '📦';
+            } else {
+                spot.classList.remove('cursor-grab');
+                infoButton.classList.add('hidden');
 
-                        if(plant.hasWeed) {
-                            statusEmoji.textContent = '🌱';
-                        } else if (plant.waterStatus < 30) {
-                            statusEmoji.textContent = '💧';
-                        } else {
-                            statusEmoji.textContent = '';
-                        }
-                    }
+                if (plant.hasWeed) {
+                    statusEmoji.textContent = '🌱';
+                } else if (plant.waterStatus < 30) {
+                    statusEmoji.textContent = '💧';
                 } else {
-                    plantEmoji.textContent = '';
-                    spot.classList.remove('cursor-grab');
-                    timerText.textContent = '';
-                    timerText.classList.add('hidden');
-                    infoButton.classList.add('hidden');
                     statusEmoji.textContent = '';
                 }
-            });
-            saveGameState();
+            }
+        } else {
+            plantEmoji.innerHTML = '';
+            spot.classList.remove('cursor-grab');
+            timerText.textContent = '';
+            timerText.classList.add('hidden');
+            infoButton.classList.add('hidden');
+            statusEmoji.textContent = '';
         }
+    });
+    saveGameState();
+}
 
         // Funktion zum Aktualisieren des Lagers
         function updateStorageDisplay() {
